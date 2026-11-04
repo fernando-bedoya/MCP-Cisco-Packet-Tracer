@@ -33,6 +33,7 @@ out/
 release/
 *.spec
 *.deb
+!el-arriero-mcp_*.deb
 *.AppImage
 *.snap
 *.rpm

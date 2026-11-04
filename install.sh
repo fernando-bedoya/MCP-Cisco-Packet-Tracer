@@ -4,12 +4,16 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "==> Instalando MCPCPT (PT-MCP-Bridge) en: ${PROJECT_DIR}"
+echo "==> Instalando El Arriero MCP en: ${PROJECT_DIR}"
 
 # 1. Dependencias del sistema para PyQt6 y venv
+# Nota: `apt-get update || true` evita que repositorios externos de terceros (ej. Spotify/PPAs
+# con firmas GPG vencidas en la máquina del usuario) detengan la instalación.
 if command -v apt-get >/dev/null 2>&1; then
-    echo "==> Verificando dependencias del sistema (python3-venv, libxcb-cursor0)..."
-    sudo apt-get update -qq
+    echo "==> Verificando dependencias del sistema (python3-venv, libxcb-cursor0, Qt6 SVG)..."
+    sudo apt-get update -qq || echo "AVISO: Algunos repositorios externos de apt reportaron advertencias; continuando..."
+    sudo apt-get install -y python3-venv python3-pip libxcb-cursor0 libgl1 libxkbcommon-x11-0 \
+        python3-pyqt6 python3-pyqt6.qtsvg || \
     sudo apt-get install -y python3-venv python3-pip libxcb-cursor0
 fi
 
@@ -19,7 +23,7 @@ if [ ! -d "${PROJECT_DIR}/.venv" ]; then
     python3 -m venv "${PROJECT_DIR}/.venv"
 fi
 
-echo "==> Instalando dependencias Python..."
+echo "==> Instalando dependencias Python dentro de .venv..."
 "${PROJECT_DIR}/.venv/bin/pip" install --upgrade pip -q
 "${PROJECT_DIR}/.venv/bin/pip" install -e "${PROJECT_DIR}[dev]" -q
 
@@ -36,9 +40,9 @@ DESKTOP_FILE="${APPS_DIR}/pt-mcp-bridge.desktop"
 cat > "${DESKTOP_FILE}" <<EOF
 [Desktop Entry]
 Type=Application
-Name=PT-MCP-Bridge
-Comment=Puente MCP Universal de IA para Cisco Packet Tracer
-Exec=${PROJECT_DIR}/.venv/bin/pt-mcp-bridge
+Name=El Arriero MCP
+Comment=Puente MCP de IA para Cisco Packet Tracer (Universidad de Caldas)
+Exec=${PROJECT_DIR}/.venv/bin/el-arriero-mcp
 Path=${PROJECT_DIR}
 Terminal=false
 Categories=Network;Development;Education;
@@ -55,8 +59,8 @@ echo "   Extensions -> IPC -> Configure Apps... -> Add..."
 echo "   Selecciona: ${PROJECT_DIR}/pt-mcp-bridge.pta"
 echo "   Pulsa 'Ok' y reinicia Packet Tracer (File -> Exit)."
 echo ""
-echo "2. Para abrir la interfaz gráfica:"
-echo "   ${PROJECT_DIR}/.venv/bin/pt-mcp-bridge"
-echo "   (o búscala como 'PT-MCP-Bridge' en tu menú de aplicaciones)"
+echo "2. Para abrir la interfaz gráfica (cualquiera de estos comandos funciona):"
+echo "   python3 run.py"
+echo "   ${PROJECT_DIR}/.venv/bin/el-arriero-mcp"
+echo "   (o búscala como 'El Arriero MCP' en tu menú de aplicaciones)"
 echo "========================================================================"
-

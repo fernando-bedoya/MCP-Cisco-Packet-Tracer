@@ -1,0 +1,12 @@
+services:
+  el-arriero-mcp:
+    build: .
+    container_name: el-arriero-mcp
+    network_mode: host
+    environment:
+      - PT_HOST=${PT_HOST:-127.0.0.1}
+      - PT_PORT=${PT_PORT:-39000}
+      - MCP_HOST=${MCP_HOST:-127.0.0.1}
+      - MCP_PORT=${MCP_PORT:-8765}
+    restart: unless-stopped
+

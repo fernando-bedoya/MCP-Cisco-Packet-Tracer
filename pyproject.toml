@@ -7,7 +7,7 @@ name = "pt-mcp-bridge"
 version = "1.0.0"
 description = "Universal AI Bridge (MCP Server + PyQt6 GUI + Native PTMP IPC) for Cisco Packet Tracer on Linux"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "Universidad de Caldas" }
@@ -30,7 +30,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

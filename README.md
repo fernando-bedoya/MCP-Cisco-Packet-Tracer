@@ -92,7 +92,17 @@ El servidor publica **89 herramientas** bajo el prefijo `cpt_*`, diseñadas para
 
 ## Instalación y Ejecución
 
-### 1. Clonar el repositorio e instalar dependencias
+### Opción A (Recomendada — Cero dependencias): Instalador autónomo `.deb`
+
+El paquete **[`el-arriero-mcp_1.0.0_amd64.deb`](el-arriero-mcp_1.0.0_amd64.deb)** ubicado en la raíz del proyecto ya trae todo comprimido en un solo ejecutable (Python, PyQt6, QtSvg, FastMCP, el índice IPC, las 89 herramientas y el archivo `.pta`). **No necesitas instalar Python, ni `pip`, ni entornos virtuales**:
+
+1. Haz **doble clic** sobre `el-arriero-mcp_1.0.0_amd64.deb` (o ejecuta en la terminal):
+   ```bash
+   sudo apt install ./el-arriero-mcp_1.0.0_amd64.deb
+   ```
+2. Abre **El Arriero MCP** desde tu menú de aplicaciones o ejecutando `el-arriero-mcp` en la terminal.
+
+### Opción B: Desde código fuente
 
 #### En Linux (instalación automatizada)
 
