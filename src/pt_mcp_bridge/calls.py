@@ -11,6 +11,7 @@ DEVICE_TYPES: dict[str, int] = {
     "bridge": 3,
     "hub": 4,
     "repeater": 5,
+    "coaxial_splitter": 6,
     "ap": 7,
     "access_point": 7,
     "pc": 8,
@@ -24,18 +25,38 @@ DEVICE_TYPES: dict[str, int] = {
     "switch3650": 17,
     "laptop": 18,
     "tablet": 19,
+    "tablet_pc": 19,
+    "smartphone": 20,
+    "pda": 20,
+    "wireless_end_device": 21,
+    "wired_end_device": 22,
+    "tv": 23,
+    "home_voip": 24,
+    "analog_phone": 25,
     "asa": 27,
+    "ioe": 28,
+    "iot": 28,
     "home_gateway": 29,
+    "cell_tower": 31,
+    "central_office_server": 32,
+    "co_server": 32,
     "sniffer": 35,
+    "mcu": 36,
+    "sbc": 37,
     "wlc": 41,
+    "lap": 44,
+    "lightweight_ap": 44,
 }
 
 DEVICE_KIND_BY_CODE: dict[int, str] = {
     0: "router", 1: "switch", 2: "cloud", 3: "bridge", 4: "hub", 5: "repeater",
-    7: "access_point", 8: "pc", 9: "server", 10: "printer", 11: "wireless_router",
-    12: "ip_phone", 13: "dsl_modem", 14: "cable_modem", 16: "multi_layer_switch",
-    17: "switch3650", 18: "laptop", 19: "tablet_pc", 27: "asa", 29: "home_gateway",
-    35: "sniffer", 41: "wireless_lan_controller",
+    6: "coaxial_splitter", 7: "access_point", 8: "pc", 9: "server", 10: "printer",
+    11: "wireless_router", 12: "ip_phone", 13: "dsl_modem", 14: "cable_modem",
+    16: "multi_layer_switch", 17: "switch3650", 18: "laptop", 19: "tablet",
+    20: "smartphone", 21: "wireless_end_device", 22: "wired_end_device", 23: "tv",
+    24: "home_voip", 25: "analog_phone", 27: "asa", 28: "ioe", 29: "home_gateway",
+    31: "cell_tower", 32: "central_office_server", 35: "sniffer", 36: "mcu",
+    37: "sbc", 41: "wireless_lan_controller", 44: "lightweight_ap",
 }
 
 DEFAULT_MODELS: dict[str, str] = {
@@ -45,15 +66,33 @@ DEFAULT_MODELS: dict[str, str] = {
     "switch3650": "3650-24PS",
     "pc": "PC-PT",
     "laptop": "Laptop-PT",
+    "tablet": "TabletPC-PT",
+    "tablet_pc": "TabletPC-PT",
+    "smartphone": "SMARTPHONE-PT",
+    "pda": "SMARTPHONE-PT",
     "server": "Server-PT",
     "hub": "Hub-PT",
     "cloud": "Cloud-PT",
+    "coaxial_splitter": "CoAxialSplitter-PT",
     "ap": "AccessPoint-PT",
     "access_point": "AccessPoint-PT",
     "wireless_router": "WRT300N",
+    "cell_tower": "Cell-Tower",
+    "central_office_server": "Central-Office-Server",
+    "co_server": "Central-Office-Server",
     "printer": "Printer-PT",
+    "ip_phone": "7960",
+    "analog_phone": "Analog-Phone-PT",
+    "home_voip": "Home-VoIP-PT",
+    "tv": "TV-PT",
     "asa": "5505",
+    "home_gateway": "DLC100",
     "sniffer": "Sniffer",
+    "mcu": "MCU-PT",
+    "sbc": "SBC-PT",
+    "wlc": "WLC-PT",
+    "lap": "LAP-PT",
+    "lightweight_ap": "LAP-PT",
 }
 
 # Códigos enteros oficiales de ConnectType (com.cisco.pt.ipc.enums.ConnectType)
@@ -95,6 +134,8 @@ def resolve_cable_code(cable: str, kind_a: str, port_a: str, kind_b: str, port_b
     c = cable.lower().strip()
     if c != "auto" and c in CABLE_CODES:
         return CABLE_CODES[c]
+    if port_a.startswith("Coaxial") or port_b.startswith("Coaxial"):
+        return CABLE_CODES["coaxial"]
     if port_a.startswith("Serial") or port_b.startswith("Serial"):
         return CABLE_CODES["serial"]
     if port_a.lower() == "console" or port_b.lower() == "console" or port_a.startswith("RS232") or port_b.startswith("RS232"):

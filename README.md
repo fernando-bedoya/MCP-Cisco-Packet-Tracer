@@ -55,9 +55,9 @@ Cisco Packet Tracer expone un canal de comunicación entre procesos (**IPC**) so
 
 ---
 
-## Catálogo de Herramientas MCP (89 Herramientas por Dominio)
+## Catálogo de Herramientas MCP (99 Herramientas por Dominio)
 
-El servidor publica **89 herramientas** bajo el prefijo `cpt_*`, diseñadas para cubrir desde operaciones físicas hasta protocolos avanzados y autodescubrimiento de los **2.068 métodos** del motor IPC:
+El servidor publica **99 herramientas** bajo el prefijo `cpt_*`, diseñadas para cubrir desde operaciones físicas hasta protocolos avanzados, redes móviles celulares y autodescubrimiento de los **2.068 métodos** del motor IPC:
 
 1. **Topología y Dispositivos (20 herramientas)**:
    - `cpt_get_topology`, `cpt_add_device`, `cpt_remove_device`, `cpt_move_device`, `cpt_rename_device`, `cpt_clone_device`, `cpt_connect_ports`, `cpt_disconnect_ports`, `cpt_list_ports`, `cpt_set_port_state`, `cpt_add_module`, `cpt_power_device`, `cpt_add_note`, `cpt_group_devices`, `cpt_layout_auto`, `cpt_export_topology_json`, `cpt_import_topology_json`, `cpt_configure_host`, `cpt_send_cli_command`, `cpt_configure_ios`.
@@ -77,6 +77,8 @@ El servidor publica **89 herramientas** bajo el prefijo `cpt_*`, diseñadas para
    - `cpt_get_instructions`, `cpt_check_activity`, `cpt_list_activity_checks`, `cpt_generate_lab`, `cpt_backup_all_configs`, `cpt_apply_config_bundle`, `cpt_generate_docs`.
 9. **Meta-Herramientas y Escalado Dinámico (5 herramientas)**:
    - `cpt_search_methods`, `cpt_describe_method`, `cpt_batch`, `cpt_run_macro`, `cpt_raw_ipc`.
+10. **Redes Móviles y Celulares — 3G/4G/LTE, Handover y Bluetooth/BLE (10 herramientas)**:
+   - `cpt_add_mobile_device`, `cpt_connect_cell_tower_to_co`, `cpt_configure_cellular_interface`, `cpt_configure_mobile_wifi_toggle`, `cpt_deploy_cellular_topology`, `cpt_simulate_mobile_handover`, `cpt_set_mobile_velocity`, `cpt_configure_bluetooth`, `cpt_configure_ble_beacon`, `cpt_audit_mobile_network`.
 
 ---
 

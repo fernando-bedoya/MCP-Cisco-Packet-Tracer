@@ -196,10 +196,19 @@ def test_extended_tools_and_mcp_catalog(fake_pt):
     docs_res = json.loads(svc.generate_docs())
     assert "```mermaid" in docs_res["markdown"]
 
-    # 3. Verificar que FastMCP registra todo el catálogo expandido (>80 herramientas)
+    # 3. Verificar que FastMCP registra todo el catálogo expandido (99 herramientas incluyendo redes móviles)
+    mob_res = json.loads(svc.add_mobile_device("Celular1", "smartphone", "", 300, 300))
+    assert mob_res["kind"] == "smartphone" and mob_res["model"] == "SMARTPHONE-PT"
+
+    radio_res = json.loads(svc.configure_mobile_wifi_toggle("Celular1", "cellular"))
+    assert radio_res["active_radio"] == "cellular"
+
+    bt_res = json.loads(svc.configure_bluetooth("Celular1", enabled=True, discoverable=True))
+    assert bt_res["bluetooth_enabled"] is True
+
     mcp = build_mcp(svc)
     registered_tools = list(mcp._tool_manager._tools.keys())
-    assert len(registered_tools) >= 85
+    assert len(registered_tools) >= 99
     for expected in (
         "cpt_move_device",
         "cpt_create_vlan",
@@ -213,6 +222,16 @@ def test_extended_tools_and_mcp_catalog(fake_pt):
         "cpt_describe_method",
         "cpt_batch",
         "cpt_run_macro",
+        "cpt_add_mobile_device",
+        "cpt_connect_cell_tower_to_co",
+        "cpt_configure_cellular_interface",
+        "cpt_configure_mobile_wifi_toggle",
+        "cpt_deploy_cellular_topology",
+        "cpt_simulate_mobile_handover",
+        "cpt_set_mobile_velocity",
+        "cpt_configure_bluetooth",
+        "cpt_configure_ble_beacon",
+        "cpt_audit_mobile_network",
     ):
         assert expected in registered_tools
 

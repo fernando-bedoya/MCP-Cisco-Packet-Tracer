@@ -471,25 +471,29 @@ class PacketTracerService(ExtendedOperationsMixin):
                     }
                 except (PTError, ValueError, KeyError, TypeError) as exc:
                     report["routers"][name] = {"error": str(exc)}
-            elif kind in ("pc", "laptop", "server"):
+            elif kind in ("pc", "laptop", "server", "smartphone", "tablet"):
+                default_port = "3G/4G Cell1" if kind in ("smartphone", "tablet") else "FastEthernet0"
                 try:
                     cur_ip = self._run(
-                        f"getIp {name}:Fa0",
-                        calls.port_step(name, "FastEthernet0") + [Step("getIpAddress")],
+                        f"getIp {name}:{default_port}",
+                        calls.port_step(name, default_port) + [Step("getIpAddress")],
                     )
                     cur_mask = self._run(
-                        f"getMask {name}:Fa0",
-                        calls.port_step(name, "FastEthernet0") + [Step("getSubnetMask")],
+                        f"getMask {name}:{default_port}",
+                        calls.port_step(name, default_port) + [Step("getSubnetMask")],
                     )
                     report["hosts"][name] = {
                         "ip": cur_ip,
                         "mask": cur_mask,
+                        "port": default_port,
                         "kind": kind,
                     }
                 except (PTError, ValueError, KeyError, TypeError) as exc:
                     report["hosts"][name] = {"error": str(exc)}
             elif kind in ("switch", "multi_layer_switch"):
                 report["switches"].append(name)
+            elif kind in ("cell_tower", "central_office_server"):
+                report.setdefault("mobile_infrastructure", []).append({"name": name, "kind": kind})
 
         return json.dumps(report, ensure_ascii=False)
 

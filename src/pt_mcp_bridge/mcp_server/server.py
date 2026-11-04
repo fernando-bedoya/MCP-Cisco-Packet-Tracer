@@ -564,8 +564,97 @@ def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
 
     @mcp.tool()
     def cpt_run_macro(macro_name: str, params: dict[str, Any] | None = None) -> str:
-        """Ejecuta una receta/macro predefinida (ej. `office_3vlans_roas`, `wan_ospf_pair`)."""
+        """Ejecuta una receta/macro predefinida (ej. `office_3vlans_roas`, `wan_ospf_pair`, `mobile_lte_core`)."""
         return _safe(lambda: service.run_macro(macro_name, params))
+
+    # =========================================================================
+    # REDES MÓVILES Y CELULARES (3G/4G/LTE, HANDOVER Y BLUETOOTH/BLE)
+    # =========================================================================
+    @mcp.tool()
+    def cpt_add_mobile_device(name: str, role: str = "smartphone",
+                              model: str = "", x: int = 250, y: int = 250) -> str:
+        """Agrega un nodo del ecosistema de redes móviles (`smartphone`, `tablet`, `cell_tower`, `central_office_server`, `coaxial_splitter`, `lap`)."""
+        return _safe(lambda: service.add_mobile_device(name, role, model, x, y))
+
+    @mcp.tool()
+    def cpt_connect_cell_tower_to_co(cell_tower: str, co_server: str,
+                                     co_port: str = "Coaxial0",
+                                     tower_port: str = "Coaxial0",
+                                     backbone_router: str = "",
+                                     router_port: str = "GigabitEthernet0/0") -> str:
+        """Conecta una antena `Cell Tower` con el `Central Office Server` mediante cable coaxial (`Coaxial0..5`) y opcionalmente el puerto `Backbone` hacia un router."""
+        return _safe(lambda: service.connect_cell_tower_to_co(
+            cell_tower, co_server, co_port, tower_port, backbone_router, router_port,
+        ))
+
+    @mcp.tool()
+    def cpt_configure_cellular_interface(device: str, dhcp: bool = True,
+                                         ip: str = "", mask: str = "", gateway: str = "",
+                                         dns: str = "", port: str = "3G/4G Cell1",
+                                         disable_wifi: bool = True,
+                                         pap_chap_user: str = "", pap_chap_password: str = "",
+                                         auth_mode: str = "chap") -> str:
+        """Configura la interfaz celular (`3G/4G Cell1`) de un Smartphone o Tablet (DHCP/estático, credenciales PAP/CHAP y desactivación de `Wireless0` para evitar conflicto de ruta)."""
+        return _safe(lambda: service.configure_cellular_interface(
+            device, dhcp, ip, mask, gateway, dns, port, disable_wifi,
+            pap_chap_user, pap_chap_password, auth_mode,
+        ))
+
+    @mcp.tool()
+    def cpt_configure_mobile_wifi_toggle(device: str, active_radio: str = "cellular") -> str:
+        """Conmuta el radio activo de un Smartphone o Tablet entre red celular (`active_radio='cellular'`) y Wi-Fi (`active_radio='wifi'`)."""
+        return _safe(lambda: service.configure_mobile_wifi_toggle(device, active_radio))
+
+    @mcp.tool()
+    def cpt_deploy_cellular_topology(co_server: str = "CO-Core",
+                                     isp_router: str = "R-ISP",
+                                     cell_towers: int = 2,
+                                     smartphones: int = 2,
+                                     tablets: int = 1,
+                                     backbone_subnet: str = "172.16.0.0",
+                                     backbone_gateway: str = "172.16.0.1",
+                                     backbone_mask: str = "255.255.255.0",
+                                     dns_ip: str = "8.8.8.8") -> str:
+        """Despliega automáticamente una arquitectura celular 3G/4G/LTE completa (Router ISP con DHCP <-> Central Office Server <-> N Cell Towers por cable coaxial <-> Smartphones y Tablets)."""
+        return _safe(lambda: service.deploy_cellular_topology(
+            co_server, isp_router, cell_towers, smartphones, tablets,
+            backbone_subnet, backbone_gateway, backbone_mask, dns_ip,
+        ))
+
+    @mcp.tool()
+    def cpt_simulate_mobile_handover(device: str, start_x: int, start_y: int,
+                                     end_x: int, end_y: int, steps: int = 4,
+                                     ping_target: str = "") -> str:
+        """Simula el desplazamiento físico y handover (cambio de celda entre antenas) de un Smartphone o Tablet desde `(start_x, start_y)` hasta `(end_x, end_y)`."""
+        return _safe(lambda: service.simulate_mobile_handover(
+            device, start_x, start_y, end_x, end_y, steps, ping_target,
+        ))
+
+    @mcp.tool()
+    def cpt_set_mobile_velocity(device: str, vx: float = 0.0, vy: float = 0.0) -> str:
+        """Asigna un vector de velocidad de desplazamiento autónomo `(vx, vy)` a un dispositivo móvil en el lienzo."""
+        return _safe(lambda: service.set_mobile_velocity(device, vx, vy))
+
+    @mcp.tool()
+    def cpt_configure_bluetooth(device: str, enabled: bool = True,
+                                discoverable: bool = True, pair_mac: str = "") -> str:
+        """Configura el módulo Bluetooth (`BluetoothManager`) en un Smartphone, Tablet, Laptop o SBC (visibilidad, broadcast y emparejamiento por MAC)."""
+        return _safe(lambda: service.configure_bluetooth(device, enabled, discoverable, pair_mac))
+
+    @mcp.tool()
+    def cpt_configure_ble_beacon(device: str, enabled: bool = True,
+                                 beacon_uuid: str = "{00000000-0000-0000-0000-000000000001}",
+                                 beacon_data: str = "Caldas-BLE-Beacon",
+                                 frequency_ms: int = 1000) -> str:
+        """Configura la emisión de balizas Bluetooth Low Energy (BLE Beacon) en un equipo móvil o IoT."""
+        return _safe(lambda: service.configure_ble_beacon(
+            device, enabled, beacon_uuid, beacon_data, frequency_ms,
+        ))
+
+    @mcp.tool()
+    def cpt_audit_mobile_network() -> str:
+        """Audita el segmento de redes móviles: Central Office Servers, Cell Towers, enlaces coaxiales y estado de los radios `3G/4G Cell1` y `Wireless0` en Smartphones y Tablets."""
+        return _safe(service.audit_mobile_network)
 
     return mcp
 
