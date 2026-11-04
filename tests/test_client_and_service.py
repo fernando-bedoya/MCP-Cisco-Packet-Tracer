@@ -117,7 +117,7 @@ def fake_pt():
                         conn.sendall(protocol.encode_frame(["102", rid, "14", "4", "0", "8", "OK"]))
                     elif "getDeviceCount" in f:
                         conn.sendall(protocol.encode_frame(["102", rid, "4", "1"]))
-                    elif "getLinkCount" in f or "getType" in f:
+                    elif "getLinkCount" in f or "getType" in f or "getPortCount" in f:
                         conn.sendall(protocol.encode_frame(["102", rid, "4", "0"]))
                     elif "getCenterXCoordinate" in f or "getCenterYCoordinate" in f:
                         conn.sendall(protocol.encode_frame(["102", rid, "7", "150.0"]))
@@ -158,3 +158,63 @@ def test_service_end_to_end(fake_pt):
     assert raw["result"] == "R1"
 
     c.disconnect()
+
+
+def test_extended_tools_and_mcp_catalog(fake_pt):
+    from pt_mcp_bridge.mcp_server import build_mcp
+
+    port, _seen = fake_pt
+    c = PTClient()
+    c.connect("127.0.0.1", port)
+    svc = PacketTracerService(c)
+
+    # 1. Meta-herramientas sobre ipc_index.json (sin round-trip IPC)
+    search_res = json.loads(svc.search_methods("addDevice", class_name="LogicalWorkspace"))
+    assert search_res["count"] >= 1
+    assert search_res["matches"][0]["method"] == "addDevice"
+
+    desc_res = json.loads(svc.describe_method("LogicalWorkspace", "createLink"))
+    assert desc_res["class"] == "LogicalWorkspace"
+    assert len(desc_res["overloads"]) >= 1
+
+    # 2. Operaciones L2 / L3 / Seguridad / Batch
+    vlan_res = json.loads(svc.create_vlan("SW1", 10, "ADMIN"))
+    assert vlan_res["completed"] is True
+
+    ospf_res = json.loads(svc.configure_ospf("R1", 1, [{"network": "10.0.0.0", "wildcard": "0.0.0.3", "area": 0}]))
+    assert ospf_res["completed"] is True
+
+    sec_res = json.loads(svc.secure_device("R1", "c1sc0", console_password="con", vty_password="vty"))
+    assert sec_res["completed"] is True
+
+    batch_res = json.loads(svc.batch([
+        {"tool": "cpt_move_device", "args": {"name": "R1", "x": 250, "y": 250}},
+        {"tool": "cpt_create_vlan", "args": {"device": "SW1", "vlan_id": 20, "name": "VOICE"}},
+    ]))
+    assert batch_res["executed"] == 2
+
+    docs_res = json.loads(svc.generate_docs())
+    assert "```mermaid" in docs_res["markdown"]
+
+    # 3. Verificar que FastMCP registra todo el catálogo expandido (>80 herramientas)
+    mcp = build_mcp(svc)
+    registered_tools = list(mcp._tool_manager._tools.keys())
+    assert len(registered_tools) >= 85
+    for expected in (
+        "cpt_move_device",
+        "cpt_create_vlan",
+        "cpt_configure_ospf",
+        "cpt_configure_dhcp_server",
+        "cpt_configure_acl",
+        "cpt_configure_ssid",
+        "cpt_traceroute",
+        "cpt_check_activity",
+        "cpt_search_methods",
+        "cpt_describe_method",
+        "cpt_batch",
+        "cpt_run_macro",
+    ):
+        assert expected in registered_tools
+
+    c.disconnect()
+

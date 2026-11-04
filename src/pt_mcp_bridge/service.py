@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from pt_mcp_bridge import calls
+from pt_mcp_bridge.extended_ops import ExtendedOperationsMixin
 from pt_mcp_bridge.ipc import IPCTransport, PTError
 from pt_mcp_bridge.ipc.client import describe
 from pt_mcp_bridge.ipc.protocol import Arg, Step
@@ -36,7 +37,7 @@ class ValidationError(ValueError):
     """Argumentos inválidos de una operación."""
 
 
-class PacketTracerService:
+class PacketTracerService(ExtendedOperationsMixin):
     def __init__(self, client: IPCTransport) -> None:
         self._client = client
 

@@ -48,30 +48,35 @@ Cisco Packet Tracer expone un canal de comunicación entre procesos (**IPC**) so
 | `ipc/protocol.py` | Codificación y decodificación pura de tramas PTMP (`FrameParser`, tipos primitivos de Qt, digest MD5 y validación de límites de trama). |
 | `ipc/client.py` | Cliente TCP *thread-safe* con manejo de timeouts de conexión/petición, cierre no bloqueante y reconexión exponencial (`IPCTransport`). |
 | `calls.py` | Constructores de cadenas de pasos (`Step`) para el modelo de objetos de Packet Tracer y resolución automática de cableado según normas CCNA. |
-| `service.py` | Lógica de dominio para las 14 herramientas, recuperación automática de submodos de consola Cisco IOS (`config-if`, `config-router`) e índice IPC (`ipc_index.json`). |
+| `service.py` y `extended_ops.py` | Lógica de dominio para las **89 herramientas** agrupadas por capa (Topología, L2, L3, Servicios, Seguridad, Wireless/WAN, Diagnóstico, Calificación `.pka` y Meta-herramientas) más acceso al índice IPC (`ipc_index.json`). |
 | `mcp_server/server.py` | Adaptador MCP (`FastMCP`) capaz de operar por transporte `streamable-http` o `stdio`. |
 | `gui/` | Interfaz gráfica en PyQt6 para monitoreo de tramas TX/RX en tiempo real, medición de latencia IPC y control de conexión. |
 | `config.py` | Gestión centralizada de configuración mediante variables de entorno (`.env`) con valores por defecto seguros (`127.0.0.1`). |
 
 ---
 
-## Herramientas MCP Expuestas
+## Catálogo de Herramientas MCP (89 Herramientas por Dominio)
 
-El puente publica **14 herramientas** bajo el prefijo `cpt_*`:
+El servidor publica **89 herramientas** bajo el prefijo `cpt_*`, diseñadas para cubrir desde operaciones físicas hasta protocolos avanzados y autodescubrimiento de los **2.068 métodos** del motor IPC:
 
-- **`cpt_get_topology`**: Inventario completo de nodos en el lienzo, coordenadas, modelos y enlaces cableados.
-- **`cpt_add_device` / `cpt_remove_device`**: Creación y eliminación de routers, switches, PCs, servidores, laptops, nubes y puntos de acceso, omitiendo automáticamente el arranque IOS (`skipBoot`).
-- **`cpt_connect_ports`**: Tendido de enlaces físicos (`auto`, `straight`, `cross`, `serial`, `fiber`, `console`, `coaxial`, `octal`, `usb`).
-- **`cpt_list_ports`**: Consulta de interfaces de un equipo con estado físico/protocolo, dirección IPv4 y máscara.
-- **`cpt_configure_ios`**: Ejecución transaccional de bloques de comandos Cisco IOS en modo de configuración global con salida automática de submodos y guardado en NVRAM (`write memory`).
-- **`cpt_send_cli_command`**: Envío directo de comandos de verificación o configuración a la consola IOS (`show ip route`, `show running-config`, `show vlan brief`, etc.).
-- **`cpt_configure_host`**: Asignación de direccionamiento IPv4 estático (IP, máscara, puerta de enlace, DNS) o habilitación de cliente DHCP en equipos finales.
-- **`cpt_ping`**: Prueba de conectividad ICMP desde un host o enrutador hacia una dirección IP destino.
-- **`cpt_fast_forward`**: Adelanto del reloj de simulación en modo *Realtime* para converger STP, ARP, DHCP y protocolos de enrutamiento.
-- **`cpt_audit_network`**: Auditoría integral de la topología (interfaces, direccionamiento y tablas de enrutamiento de todos los dispositivos en una sola operación).
-- **`cpt_get_instructions`**: Extracción en texto plano del enunciado de laboratorios `.pka` o `.pkt`.
-- **`cpt_save_file`**: Guardado del archivo activo en Cisco Packet Tracer.
-- **`cpt_raw_ipc`**: Invocación directa de cualquiera de los 2.068 métodos del índice interno de Packet Tracer (`ipc_index.json`).
+1. **Topología y Dispositivos (20 herramientas)**:
+   - `cpt_get_topology`, `cpt_add_device`, `cpt_remove_device`, `cpt_move_device`, `cpt_rename_device`, `cpt_clone_device`, `cpt_connect_ports`, `cpt_disconnect_ports`, `cpt_list_ports`, `cpt_set_port_state`, `cpt_add_module`, `cpt_power_device`, `cpt_add_note`, `cpt_group_devices`, `cpt_layout_auto`, `cpt_export_topology_json`, `cpt_import_topology_json`, `cpt_configure_host`, `cpt_send_cli_command`, `cpt_configure_ios`.
+2. **Capa 2 — Switching (8 herramientas)**:
+   - `cpt_create_vlan`, `cpt_assign_vlan_port`, `cpt_configure_trunk`, `cpt_configure_etherchannel`, `cpt_configure_stp`, `cpt_configure_port_security`, `cpt_show_mac_table`, `cpt_configure_vtp`.
+3. **Capa 3 — Enrutamiento (11 herramientas)**:
+   - `cpt_configure_static_route`, `cpt_configure_ospf`, `cpt_configure_eigrp`, `cpt_configure_rip`, `cpt_configure_bgp`, `cpt_configure_intervlan`, `cpt_configure_svi`, `cpt_configure_ipv6`, `cpt_configure_hsrp`, `cpt_configure_vrrp`, `cpt_show_routing_table`.
+4. **Servicios de Red (10 herramientas)**:
+   - `cpt_configure_dhcp_server`, `cpt_configure_dhcp_relay`, `cpt_configure_dns_server`, `cpt_configure_http_server`, `cpt_configure_ftp_server`, `cpt_configure_nat`, `cpt_configure_ntp`, `cpt_configure_syslog`, `cpt_configure_snmp`, `cpt_configure_email_server`.
+5. **Seguridad y VPN (7 herramientas)**:
+   - `cpt_configure_acl`, `cpt_apply_acl`, `cpt_configure_ssh`, `cpt_configure_aaa`, `cpt_secure_device`, `cpt_configure_vpn_ipsec`, `cpt_configure_gre`.
+6. **Wireless y WAN (6 herramientas)**:
+   - `cpt_configure_wlc`, `cpt_configure_ap`, `cpt_configure_ssid`, `cpt_configure_frame_relay`, `cpt_configure_ppp`, `cpt_configure_serial_clock`.
+7. **Verificación, Simulación y Diagnóstico (15 herramientas)**:
+   - `cpt_ping`, `cpt_traceroute`, `cpt_test_connectivity_matrix`, `cpt_fast_forward`, `cpt_audit_network`, `cpt_verify_vlans`, `cpt_verify_trunks`, `cpt_diff_config`, `cpt_snapshot_config`, `cpt_restore_config`, `cpt_find_misconfigurations`, `cpt_capture_packets`, `cpt_send_pdu`, `cpt_get_event_list`, `cpt_save_file`.
+8. **Laboratorios Académicos y Calificación `.pka` (7 herramientas)**:
+   - `cpt_get_instructions`, `cpt_check_activity`, `cpt_list_activity_checks`, `cpt_generate_lab`, `cpt_backup_all_configs`, `cpt_apply_config_bundle`, `cpt_generate_docs`.
+9. **Meta-Herramientas y Escalado Dinámico (5 herramientas)**:
+   - `cpt_search_methods`, `cpt_describe_method`, `cpt_batch`, `cpt_run_macro`, `cpt_raw_ipc`.
 
 ---
 

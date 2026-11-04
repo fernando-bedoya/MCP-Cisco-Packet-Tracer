@@ -243,3 +243,64 @@ def link_end_device(index: int, port_getter: str) -> list[Step]:
 def link_end_port(index: int, port_getter: str) -> list[Step]:
     return [Step("network"), Step("getLinkAt", (Arg.integer(index),)),
             Step(port_getter), Step("getName")]
+
+
+def move_device(name: str, x: int, y: int) -> list[Step]:
+    """Device.moveToLocationCentered(int x, int y) -> bool."""
+    return device(name) + [Step("moveToLocationCentered", (Arg.integer(int(x)), Arg.integer(int(y))))]
+
+
+def set_device_power(name: str, enabled: bool) -> list[Step]:
+    """Device.setPower(bool) -> void."""
+    return device(name) + [Step("setPower", (Arg.boolean(enabled),))]
+
+
+def get_device_power(name: str) -> list[Step]:
+    """Device.getPower() -> bool."""
+    return device(name) + [Step("getPower")]
+
+
+def add_device_module(name: str, slot: str, module_type: int, model: str) -> list[Step]:
+    """Device.addModule(string slot, enum:ModuleType type, string model) -> bool."""
+    return device(name) + [Step("addModule", (Arg.string(slot), Arg.integer(module_type), Arg.string(model)))]
+
+
+def set_port_power(dev: str, port_name: str, enabled: bool) -> list[Step]:
+    """Port.setPower(bool) -> void."""
+    return port_step(dev, port_name) + [Step("setPower", (Arg.boolean(enabled),))]
+
+
+def set_port_clock_rate(dev: str, port_name: str, clock_rate: int) -> list[Step]:
+    """Port.setClockRate(int) -> void."""
+    return port_step(dev, port_name) + [Step("setClockRate", (Arg.integer(int(clock_rate)),))]
+
+
+def add_canvas_note(x: int, y: int, z: float, text: str) -> list[Step]:
+    """LogicalWorkspace.addNote(int x, int y, double z, QString text) -> uuid."""
+    return _LW + [Step("addNote", (Arg.integer(int(x)), Arg.integer(int(y)), Arg.double(float(z)), Arg.qstring(text)))]
+
+
+def component_item(dev_name: str) -> list[Step]:
+    """LogicalWorkspace.getComponentItem(QString devName) -> ComponentItem."""
+    return _LW + [Step("getComponentItem", (Arg.qstring(dev_name),))]
+
+
+def device_process(dev_name: str, process_name: str) -> list[Step]:
+    """Device.getProcess(string name) -> Process."""
+    return device(dev_name) + [Step("getProcess", (Arg.string(process_name),))]
+
+
+def active_file() -> list[Step]:
+    """AppWindow.getActiveFile() -> NetworkFile / ActivityFile."""
+    return [Step("appWindow"), Step("getActiveFile")]
+
+
+def simulation_step(method: str, args: tuple[Arg, ...] = ()) -> list[Step]:
+    """Simulation.<method>(args...)."""
+    return [Step("simulation"), Step(method, args)]
+
+
+def add_simple_pdu(src_dev: str, dst_dev: str) -> list[Step]:
+    """UserCreatedPDU.addSimplePdu(QString src, QString dst) -> enum:ADD_PDU_ERROR."""
+    return [Step("appWindow"), Step("getUserCreatedPDU"), Step("addSimplePdu", (Arg.qstring(src_dev), Arg.qstring(dst_dev)))]
+
