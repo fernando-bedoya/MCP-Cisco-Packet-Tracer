@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pt-mcp-bridge"
+version = "1.0.0"
+description = "Universal AI Bridge (MCP Server + PyQt6 GUI + Native PTMP IPC) for Cisco Packet Tracer on Linux"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "David Fernando Bedoya Ramirez" }
+]
+keywords = [
+    "cisco",
+    "packet-tracer",
+    "mcp",
+    "model-context-protocol",
+    "ptmp",
+    "ipc",
+    "network-automation",
+    "ai-agent",
+    "pyqt6",
+    "linux",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Networking",
+]
+dependencies = ["PyQt6>=6.6", "mcp>=1.2.0,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5", "pyinstaller>=6"]
+
+[project.scripts]
+pt-mcp-bridge = "pt_mcp_bridge.cli:main"
+pt-quick = "pt_mcp_bridge.quick:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pt_mcp_bridge = ["ipc_index.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests"]

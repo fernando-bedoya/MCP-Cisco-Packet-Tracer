@@ -1,0 +1,25 @@
+# Entornos virtuales y caché de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Artefactos de compilación (PyInstaller / build)
+build/
+dist/
+*.spec
+
+# Logs, capturas de red y archivos temporales locales
+*.log
+capture.log
+tools/*.html
+tools/*.pka
+tools/*.pkt
+
+# Lanzador local con rutas específicas de la máquina
+PT-MCP-Bridge.desktop
+
