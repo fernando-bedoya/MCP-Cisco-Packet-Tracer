@@ -26,6 +26,7 @@ HELLO, HELLO_REPLY, APP_ID, CHALLENGE, AUTH, AUTH_RESULT, KEEP_ALIVE, BYE = (
 CALL, ERROR, RESULT, EVENT, SUBSCRIBE = "100", "101", "102", "103", "104"
 PT_VERSION_STR = ":PTVER9.0.1.0858"
 END_OF_ARGUMENTS = "0"
+MAX_FRAME_BYTES = 16 * 1024 * 1024  # Límite defensivo de 16 MiB por trama PTMP
 
 
 class ProtocolError(Exception):
@@ -127,6 +128,8 @@ class FrameParser:
                 n = int(self._buf[:i])
             except ValueError as exc:
                 raise ProtocolError(f"longitud inválida: {bytes(self._buf[:i])!r}") from exc
+            if n < 0 or n > MAX_FRAME_BYTES:
+                raise ProtocolError(f"longitud de trama fuera de rango permitido: {n}")
             end = i + 1 + n
             if len(self._buf) < end:
                 break

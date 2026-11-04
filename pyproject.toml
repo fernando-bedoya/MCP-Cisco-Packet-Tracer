@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
-    { name = "David Fernando Bedoya Ramirez" }
+    { name = "Universidad de Caldas" }
 ]
 keywords = [
     "cisco",
@@ -44,6 +44,8 @@ dependencies = ["PyQt6>=6.6", "mcp>=1.2.0,<2"]
 dev = ["pytest>=8", "ruff>=0.5", "pyinstaller>=6"]
 
 [project.scripts]
+el-arriero-mcp = "pt_mcp_bridge.cli:main"
+tracelink = "pt_mcp_bridge.cli:main"
 pt-mcp-bridge = "pt_mcp_bridge.cli:main"
 pt-quick = "pt_mcp_bridge.quick:main"
 
@@ -51,7 +53,7 @@ pt-quick = "pt_mcp_bridge.quick:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pt_mcp_bridge = ["ipc_index.json"]
+pt_mcp_bridge = ["ipc_index.json", "gui/assets/*.jpg", "gui/assets/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

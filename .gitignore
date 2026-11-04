@@ -1,25 +1,76 @@
-# Entornos virtuales y caché de Python
+# =============================================================================
+# Variables de entorno y secretos locales
+# =============================================================================
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# Entornos virtuales, bytecode y cachés de Python
+# =============================================================================
 .venv/
 venv/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 *.egg-info/
+.installed.cfg
+*.egg
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-# Artefactos de compilación (PyInstaller / build)
+# =============================================================================
+# Artefactos de compilación, empaquetado y binarios (PyInstaller / Debian / GUI)
+# =============================================================================
 build/
 dist/
+out/
+release/
 *.spec
+*.deb
+*.AppImage
+*.snap
+*.rpm
+*.exe
+*.msi
+*.dmg
 
-# Logs, capturas de red y archivos temporales locales
+# =============================================================================
+# Ecosistema Node.js / Electron (si se integran clientes o wrappers GUI)
+# =============================================================================
+node_modules/
+.electron/
+.npm/
+.eslintcache
+*.tsbuildinfo
+
+# =============================================================================
+# Registros, capturas de red y topologías temporales de Packet Tracer
+# =============================================================================
 *.log
 capture.log
 tools/*.html
-tools/*.pka
-tools/*.pkt
+*.pka
+*.pkt
+*.pkz
+!pt-mcp-bridge.pta
 
-# Lanzador local con rutas específicas de la máquina
-PT-MCP-Bridge.desktop
-
+# =============================================================================
+# Archivos del sistema operativo, editores y recursos residuales locales
+# =============================================================================
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+*.desktop
+WhatsApp*.jpeg
+WhatsApp*.jpg
+WhatsApp*.png

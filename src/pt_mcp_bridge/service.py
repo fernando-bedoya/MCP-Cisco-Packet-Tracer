@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from pt_mcp_bridge import calls
-from pt_mcp_bridge.ipc import PTClient, PTError
+from pt_mcp_bridge.ipc import IPCTransport, PTError
 from pt_mcp_bridge.ipc.client import describe
 from pt_mcp_bridge.ipc.protocol import Arg, Step
 
@@ -37,7 +37,7 @@ class ValidationError(ValueError):
 
 
 class PacketTracerService:
-    def __init__(self, client: PTClient) -> None:
+    def __init__(self, client: IPCTransport) -> None:
         self._client = client
 
     def _run(self, label: str, steps: list[Step]) -> Any:

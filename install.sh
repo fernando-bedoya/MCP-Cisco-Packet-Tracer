@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Instalador automático de MCPCPT (PT-MCP-Bridge) para Linux Mint / Ubuntu / Debian
-# Autor: David Fernando Bedoya Ramirez
+# Instalador automático de El Arriero MCP (PT-MCP-Bridge) para Linux Mint / Ubuntu / Debian
+# Proyecto académico - Universidad de Caldas
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

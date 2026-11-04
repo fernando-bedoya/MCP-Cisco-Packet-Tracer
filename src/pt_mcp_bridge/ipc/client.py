@@ -9,11 +9,22 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 from pt_mcp_bridge import config
 from pt_mcp_bridge.ipc import protocol
 from pt_mcp_bridge.ipc.protocol import Arg, ProtocolError, Step
+
+
+class IPCTransport(Protocol):
+    """Contrato de inversión de dependencias (SOLID DIP) para cualquier transporte IPC."""
+
+    @property
+    def connected(self) -> bool: ...
+
+    def log(self, level: str, message: str) -> None: ...
+
+    def call(self, steps: list[Step], timeout: float = ...) -> Any: ...
 
 
 class PTError(Exception):
@@ -187,11 +198,13 @@ class PTClient:
         sock, self._sock = self._sock, None
         if sock:
             try:
+                sock.settimeout(0.5)
                 sock.sendall(protocol.bye())
                 sock.shutdown(socket.SHUT_RDWR)
             except OSError:
                 pass
-            sock.close()
+            finally:
+                sock.close()
         self._fail_pending("Desconectado")
         if not quiet:
             self.log("info", "Desconectado.")
