@@ -237,3 +237,37 @@ def test_extended_tools_and_mcp_catalog(fake_pt):
 
     c.disconnect()
 
+
+def test_solid_architecture_and_dependency_injection(fake_pt):
+    port, _ = fake_pt
+    c = PTClient()
+    c.connect("127.0.0.1", port)
+
+    class InMemoryIndexRepo:
+        def load(self):
+            return {
+                "roots": {"ipc": "Ipc"},
+                "classes": {
+                    "Ipc": {
+                        "extends": [],
+                        "methods": [{"name": "customMethod", "params": ["string"], "returns": "string"}],
+                    }
+                },
+                "enums": {},
+            }
+
+    svc = PacketTracerService(c, index_repo=InMemoryIndexRepo())
+    # Verificar DIP con repositorio inyectado en memoria
+    search_res = json.loads(svc.search_methods("customMethod"))
+    assert search_res["count"] == 1
+    assert search_res["matches"][0]["method"] == "customMethod"
+
+    # Verificar OCP registrando una macro personalizada en tiempo de ejecución
+    svc.meta.macros.register("custom_lab", lambda params: json.dumps({"custom": True, "Lab": params.get("id", 1)}))
+    macro_res = json.loads(svc.run_macro("custom_lab", {"id": 42}))
+    assert macro_res == {"custom": True, "Lab": 42}
+    assert "custom_lab" in svc.meta.macros.available()
+
+    c.disconnect()
+
+

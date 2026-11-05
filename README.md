@@ -45,10 +45,12 @@ Cisco Packet Tracer expone un canal de comunicación entre procesos (**IPC**) so
 
 | Módulo | Responsabilidad |
 | :--- | :--- |
+| `ipc/contracts.py` | Contratos segregados (`IPCLogger`, `IPCInvoker`, `IPCConnectionLifecycle`, `IPCTransport`, `IndexRepository` y `JsonIndexRepository`) siguiendo **ISP** y **DIP**. |
 | `ipc/protocol.py` | Codificación y decodificación pura de tramas PTMP (`FrameParser`, tipos primitivos de Qt, digest MD5 y validación de límites de trama). |
 | `ipc/client.py` | Cliente TCP *thread-safe* con manejo de timeouts de conexión/petición, cierre no bloqueante y reconexión exponencial (`IPCTransport`). |
 | `calls.py` | Constructores de cadenas de pasos (`Step`) para el modelo de objetos de Packet Tracer y resolución automática de cableado según normas CCNA. |
-| `service.py` y `extended_ops.py` | Lógica de dominio para las **89 herramientas** agrupadas por capa (Topología, L2, L3, Servicios, Seguridad, Wireless/WAN, Diagnóstico, Calificación `.pka` y Meta-herramientas) más acceso al índice IPC (`ipc_index.json`). |
+| `services/` | Paquete de 10 servicios de dominio desacoplados bajo principios **SOLID** (`IosCliService`, `TopologyService`, `SwitchingService`, `RoutingService`, `NetworkServicesManager`, `SecurityService`, `WanWirelessService`, `DiagnosticsService`, `AcademicLabService`, `MobileNetworkService`, `MetaCatalogService` y `MacroRegistry`). |
+| `service.py` | Fachada unificada (`PacketTracerService`) que compone los servicios de dominio e inyecta `IPCTransport` e `IndexRepository` para las **99 herramientas MCP**. |
 | `mcp_server/server.py` | Adaptador MCP (`FastMCP`) capaz de operar por transporte `streamable-http` o `stdio`. |
 | `gui/` | Interfaz gráfica en PyQt6 para monitoreo de tramas TX/RX en tiempo real, medición de latencia IPC y control de conexión. |
 | `config.py` | Gestión centralizada de configuración mediante variables de entorno (`.env`) con valores por defecto seguros (`127.0.0.1`). |
@@ -96,13 +98,20 @@ El servidor publica **99 herramientas** bajo el prefijo `cpt_*`, diseñadas para
 
 ### Opción A (Recomendada — Cero dependencias): Instalador autónomo `.deb`
 
-El paquete **[`el-arriero-mcp_1.0.0_amd64.deb`](el-arriero-mcp_1.0.0_amd64.deb)** ubicado en la raíz del proyecto ya trae todo comprimido en un solo ejecutable (Python, PyQt6, QtSvg, FastMCP, el índice IPC, las 89 herramientas y el archivo `.pta`). **No necesitas instalar Python, ni `pip`, ni entornos virtuales**:
+El paquete **[`el-arriero-mcp_1.0.0_amd64.deb`](el-arriero-mcp_1.0.0_amd64.deb)** (disponible tanto en la sección **Releases** de GitHub como en el proyecto) ya trae todo comprimido en un solo ejecutable autónomo (Python, PyQt6, QtSvg, FastMCP, el índice IPC, las 99 herramientas y el archivo `.pta`), configura automáticamente los permisos de `/opt/pt/extensions` y no entra en conflicto con repositorios externos de `apt`:
 
-1. Haz **doble clic** sobre `el-arriero-mcp_1.0.0_amd64.deb` (o ejecuta en la terminal):
+1. Haz **doble clic** sobre `el-arriero-mcp_1.0.0_amd64.deb` o instálalo directamente con `dpkg` / `apt`:
    ```bash
-   sudo apt install ./el-arriero-mcp_1.0.0_amd64.deb
+   sudo dpkg -i el-arriero-mcp_1.0.0_amd64.deb
    ```
 2. Abre **El Arriero MCP** desde tu menú de aplicaciones o ejecutando `el-arriero-mcp` en la terminal.
+
+#### Publicación de nuevas versiones en GitHub Releases
+Para publicar una nueva versión del instalador `.deb` en la pestaña **Releases** de GitHub de forma automatizada:
+```bash
+./packaging/publish_release.sh 1.0.0
+```
+También se incluye el workflow de integración continua [`.github/workflows/release.yml`](.github/workflows/release.yml), que ejecuta `ruff` + `pytest`, compila el `.deb` y publica el Release automáticamente al subir cualquier tag `v*` (ej. `git tag v1.0.0 && git push origin v1.0.0`).
 
 ### Opción B: Desde código fuente
 

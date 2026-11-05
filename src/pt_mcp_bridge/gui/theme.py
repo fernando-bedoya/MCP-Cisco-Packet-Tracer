@@ -275,6 +275,36 @@ QPlainTextEdit#console {
     selection-background-color: #303030;
 }
 
+QScrollArea#tutorialScroll {
+    background: transparent;
+    border: none;
+}
+
+QWidget#tutorialContainer {
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    background: rgba(15, 15, 15, 140);
+    width: 10px;
+    margin: 2px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical {
+    background: #3A3A3A;
+    min-height: 24px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #555555;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
 QMessageBox {
     background-color: #151515;
     color: #E5E5E5;

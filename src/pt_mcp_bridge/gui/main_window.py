@@ -1,8 +1,9 @@
-"""Ventana principal PyQt6 de TraceLink con identidad visual de Caldas, Colombia."""
+"""Ventana principal PyQt6 de El Arriero MCP con identidad visual de Caldas, Colombia."""
 from __future__ import annotations
 
 import sys
 import threading
+from pathlib import Path
 
 from PyQt6.QtCore import QObject, QRect, QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QPixmap, QTextCursor
@@ -17,6 +18,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QStackedWidget,
     QVBoxLayout,
@@ -130,6 +132,7 @@ class MainWindow(QMainWindow):
 
         self._pages = QStackedWidget()
         self._pages.addWidget(self._build_home_page())
+        self._pages.addWidget(self._build_tutorial_page())
         self._pages.addWidget(self._build_settings_page())
         self._pages.addWidget(self._build_about_page())
         body.addWidget(self._pages, stretch=1)
@@ -176,13 +179,15 @@ class MainWindow(QMainWindow):
         v.setSpacing(6)
 
         self._btn_nav_home = QPushButton("  Inicio")
+        self._btn_nav_tutorial = QPushButton("  Tutorial")
         self._btn_nav_settings = QPushButton("  Ajustes")
         self._btn_nav_about = QPushButton("  Acerca de")
 
         self._nav_buttons = [
             (self._btn_nav_home, icons.HOME_SVG, 0),
-            (self._btn_nav_settings, icons.SETTINGS_SVG, 1),
-            (self._btn_nav_about, icons.INFO_SVG, 2),
+            (self._btn_nav_tutorial, icons.BOOK_SVG, 1),
+            (self._btn_nav_settings, icons.SETTINGS_SVG, 2),
+            (self._btn_nav_about, icons.INFO_SVG, 3),
         ]
         for btn, _svg, idx in self._nav_buttons:
             btn.setIconSize(QSize(18, 18))
@@ -329,6 +334,10 @@ class MainWindow(QMainWindow):
         lbl_reg = QLabel("Registro")
         lbl_reg.setObjectName("consoleHeader")
 
+        self._btn_tutorial_quick = QPushButton("📖 Tutorial y Ayuda")
+        self._btn_tutorial_quick.setObjectName("smallActionBtn")
+        self._btn_tutorial_quick.setCursor(Qt.CursorShape.PointingHandCursor)
+
         self._btn_test = QPushButton("Ping IPC")
         self._btn_test.setObjectName("smallActionBtn")
         self._btn_test.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -339,6 +348,7 @@ class MainWindow(QMainWindow):
 
         console_hdr.addWidget(lbl_reg)
         console_hdr.addStretch()
+        console_hdr.addWidget(self._btn_tutorial_quick)
         console_hdr.addWidget(self._btn_test)
         console_hdr.addWidget(self._btn_pta)
 
@@ -378,10 +388,149 @@ class MainWindow(QMainWindow):
         # Conexión de señales de botones
         self._btn_connect.clicked.connect(self._toggle)
         self._btn_clear.clicked.connect(self._clear_console)
+        self._btn_tutorial_quick.clicked.connect(lambda: self._switch_page(1))
         self._btn_test.clicked.connect(self._test)
         self._btn_pta.clicked.connect(self._show_pta_help)
         self._btn_copy.clicked.connect(self._copy_mcp_url)
         return page
+
+    def _build_tutorial_page(self) -> QWidget:
+        """Construye la guía interactiva paso a paso y diccionario de errores en lenguaje sencillo."""
+        scroll = QScrollArea()
+        scroll.setObjectName("tutorialScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        container = QWidget()
+        container.setObjectName("tutorialContainer")
+        v = QVBoxLayout(container)
+        v.setContentsMargins(24, 22, 24, 24)
+        v.setSpacing(16)
+
+        # --- TARJETA 1: BOSQUEJO DEL FUNCIONAMIENTO ---
+        card_flow = QFrame()
+        card_flow.setObjectName("infoCard")
+        cf_v = QVBoxLayout(card_flow)
+        cf_v.setContentsMargins(22, 18, 22, 18)
+        cf_v.setSpacing(10)
+
+        t_flow = QLabel("1. ¿Cómo funciona El Arriero MCP? (Bosquejo sencillo)")
+        t_flow.setObjectName("topTitle")
+
+        b_flow = QLabel(
+            "Imagina que <b>Cisco Packet Tracer</b> y tu <b>Inteligencia Artificial</b> hablan idiomas distintos. "
+            "<b>El Arriero MCP</b> actúa como un <b>traductor en tiempo real</b> entre los dos:<br><br>"
+            "<span style='color:#70B77E; font-weight:700;'>"
+            "  [ 1. Tú le pides algo a la IA ]  ───►  [ 2. El Arriero MCP traduce la orden ]  ───►  [ 3. Packet Tracer arma la red ]"
+            "</span><br><br>"
+            "• <b>Paso A (Tu petición):</b> Le escribes en español normal a tu asistente de IA (por ejemplo: "
+            "<i>\"Crea una red con 2 routers, un switch, 3 computadores y configúrales salida a internet\"</i>).<br>"
+            "• <b>Paso B (El puente):</b> Este programa recibe la instrucción por su canal local "
+            "(<code>http://127.0.0.1:8765/mcp</code>) y la convierte en órdenes para el simulador.<br>"
+            "• <b>Paso C (El resultado):</b> Ves aparecer en tu pantalla de Packet Tracer los equipos, los cables "
+            "conectados y las configuraciones aplicadas automáticamente."
+        )
+        b_flow.setWordWrap(True)
+        cf_v.addWidget(t_flow)
+        cf_v.addWidget(b_flow)
+        v.addWidget(card_flow)
+
+        # --- TARJETA 2: CÓMO SE INSTALA Y CÓMO SE MANEJA PASO A PASO ---
+        card_steps = QFrame()
+        card_steps.setObjectName("infoCard")
+        cs_v = QVBoxLayout(card_steps)
+        cs_v.setContentsMargins(22, 18, 22, 18)
+        cs_v.setSpacing(12)
+
+        t_steps = QLabel("2. Guía paso a paso: Configuración e Inicio Rápido")
+        t_steps.setObjectName("topTitle")
+
+        pta_path = config.pta_file_path()
+        b_steps = QLabel(
+            "<b style='color:#70B77E;'>PASO 1: Dar permiso en Cisco Packet Tracer (Solo se hace la primera vez)</b><br>"
+            "Por seguridad, Packet Tracer pide que autorices este programa una única vez:<br>"
+            "  1. Abre <b>Cisco Packet Tracer</b> e inicia sesión normalmente.<br>"
+            "  2. En el menú superior entra en: <b>Extensions</b> → <b>IPC</b> → <b>Configure Apps...</b><br>"
+            "  3. Si en la lista ya ves <i>PT-MCP-Bridge</i> de una instalación anterior, selecciónalo y pulsa <b>Remove</b>.<br>"
+            "  4. Pulsa el botón <b>Add...</b> y selecciona el archivo de permiso:<br>"
+            f"     <span style='color:#C8B88A; font-family:monospace;'>{pta_path}</span><br>"
+            "  5. En esa misma ventana abre la pestaña <b>Options</b>, marca la casilla <b>Always listen on start</b> "
+            "(puerto <code>39000</code>) y pulsa <b>Ok</b>.<br><br>"
+            "<b style='color:#70B77E;'>PASO 2: Conectar El Arriero MCP con Packet Tracer</b><br>"
+            "  1. Ve a la pestaña <b>Inicio</b> de este programa (arriba a la izquierda).<br>"
+            "  2. Deja el Host en <code>127.0.0.1</code> y el Puerto IPC en <code>39000</code>.<br>"
+            "  3. Haz clic en <b>Conectar a Packet Tracer</b>. El indicador inferior izquierdo pasará a "
+            "<span style='color:#70B77E;'>● En línea</span>.<br><br>"
+            "<b style='color:#70B77E;'>PASO 3: Vincular tu Asistente de Inteligencia Artificial</b><br>"
+            f"  • Copia la dirección <code>{self._mcp_url}</code> (con el botón de abajo o desde la barra inferior) "
+            "y agrégala como servidor MCP en tu asistente (Claude, Cursor, Antigravity, Windsurf, etc.)."
+        )
+        b_steps.setWordWrap(True)
+
+        btn_row = QHBoxLayout()
+        btn_copy_pta = QPushButton("1. Copiar ruta del permiso (.pta) y reparar")
+        btn_copy_pta.setObjectName("clearBtn")
+        btn_copy_pta.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_copy_pta.clicked.connect(self._show_pta_help)
+
+        btn_copy_url = QPushButton("2. Copiar dirección para tu IA")
+        btn_copy_url.setObjectName("clearBtn")
+        btn_copy_url.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_copy_url.clicked.connect(self._copy_mcp_url)
+
+        btn_row.addWidget(btn_copy_pta)
+        btn_row.addWidget(btn_copy_url)
+        btn_row.addStretch()
+
+        cs_v.addWidget(t_steps)
+        cs_v.addWidget(b_steps)
+        cs_v.addLayout(btn_row)
+        v.addWidget(card_steps)
+
+        # --- TARJETA 3: ERRORES FRECUENTES Y SIGNIFICADO DE CADA CÓDIGO ---
+        card_err = QFrame()
+        card_err.setObjectName("infoCard")
+        ce_v = QVBoxLayout(card_err)
+        ce_v.setContentsMargins(22, 18, 22, 18)
+        ce_v.setSpacing(10)
+
+        t_err = QLabel("3. Solución de Errores Frecuentes y Qué Significa Cada Código")
+        t_err.setObjectName("topTitle")
+
+        b_err = QLabel(
+            "<b style='color:#D16D6A;'>● Error en Packet Tracer: \"An error occurred importing this application's meta file\"</b><br>"
+            "<b>¿Qué significa?:</b> Packet Tracer intentó copiar el archivo de permiso <code>.pta</code> a su carpeta interna, "
+            "pero ya había un archivo viejo con el mismo nombre o la carpeta tenía candado de administrador.<br>"
+            "<b>Cómo solucionarlo:</b> En la ventana <i>Configure Apps</i> de Packet Tracer, si ya aparece <i>PT-MCP-Bridge</i>, "
+            "selecciónalo y pulsa <b>Remove</b>; luego haz clic en el botón <b>\"1. Copiar ruta del permiso (.pta) y reparar\"</b> "
+            "de arriba y vuelve a darle a <b>Add...</b>.<br><br>"
+            "<b style='color:#D4A359;'>● Error en consola: \"Connection refused\" o el estado cambia a \"Error\"</b><br>"
+            "<b>¿Qué significa?:</b> El Arriero MCP intentó comunicarse por el puerto <code>39000</code>, pero Packet Tracer "
+            "no respondió.<br>"
+            "<b>Cómo solucionarlo:</b> Verifica que <b>Cisco Packet Tracer esté abierto</b> y que hayas realizado el <b>Paso 1</b>.<br><br>"
+            "<b style='color:#D4A359;'>● Error: \"createLink devolvió false\" al conectar un cable</b><br>"
+            "<b>¿Qué significa?:</b> Se intentó conectar un cable en un enchufe (puerto) que ya estaba ocupado por otro cable "
+            "o que no existe en ese modelo de equipo.<br><br>"
+            "<b style='color:#70B77E;'>● ¿Qué significan las etiquetas y códigos que ves en el cuadro de \"Registro\"?</b><br>"
+            "  • <b>[INFO] (Verde):</b> Todo marcha bien (el servidor encendió o la conexión fue exitosa).<br>"
+            "  • <b>[MCP] (Dorado):</b> Muestra la acción que tu Inteligencia Artificial está ejecutando en ese instante.<br>"
+            "  • <b>TX y RX:</b> <code>TX</code> cuenta cuántas órdenes se han enviado a Packet Tracer y <code>RX</code> cuántas "
+            "respuestas han regresado.<br>"
+            "  • <b>status: ok (Código 0):</b> El router o switch aceptó y guardó la orden correctamente.<br>"
+            "  • <b>status: ambiguous (Código 1):</b> Palabra escrita a medias; el equipo no supo cuál comando elegir.<br>"
+            "  • <b>status: invalid (Código 2):</b> Ese comando no aplica para ese modelo de equipo o modo actual.<br>"
+            "  • <b>status: incomplete (Código 3):</b> A la orden le faltaron datos (por ejemplo, faltó escribir la dirección IP).<br>"
+            "  • <b>status: not_implemented (Código 4):</b> Es una función avanzada que el simulador Packet Tracer no incluye."
+        )
+        b_err.setWordWrap(True)
+
+        ce_v.addWidget(t_err)
+        ce_v.addWidget(b_err)
+        v.addWidget(card_err)
+        v.addStretch()
+
+        scroll.setWidget(container)
+        return scroll
 
     def _build_settings_page(self) -> QWidget:
         page = QWidget()
@@ -568,15 +717,30 @@ class MainWindow(QMainWindow):
 
     def _show_pta_help(self) -> None:
         pta = config.pta_file_path()
+        # Limpiar copias residuales en ~/pt/extensions o /opt/pt/extensions que bloquean QFile::copy en Packet Tracer
+        for ext_dir in (Path.home() / "pt" / "extensions", Path("/opt/pt/extensions")):
+            stale = ext_dir / "pt-mcp-bridge.pta"
+            try:
+                if stale.exists() and stale.resolve() != pta.resolve():
+                    stale.unlink()
+            except OSError:
+                pass
+
+        clipboard = QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.setText(str(pta))
+
         QMessageBox.information(
             self,
             "Registro único de permisos ExApp en Packet Tracer",
             "Para que Packet Tracer autorice crear equipos, conectar cables y usar la CLI:\n\n"
             "1. En Cisco Packet Tracer abre: Extensions → IPC → Configure Apps...\n"
-            "2. Pulsa 'Add...' y selecciona:\n"
+            "2. Si ya aparece 'PT-MCP-Bridge' en la lista, selecciónalo y pulsa 'Remove'.\n"
+            "3. Pulsa 'Add...' y pega la ruta (ya fue copiada a tu portapapeles):\n"
             f"   {pta}\n"
-            "3. Pulsa 'Ok' y vuelve a conectar.\n\n"
-            "Nota: Cierra Packet Tracer (File → Exit) una vez para guardar el registro.",
+            "4. Pulsa 'Ok' y vuelve a conectar.\n\n"
+            "Nota: Si aparece 'Error Importing App Meta File', ejecuta una vez en terminal:\n"
+            "sudo chmod -R a+rwX /opt/pt/extensions && sudo rm -f /opt/pt/extensions/pt-mcp-bridge.pta",
         )
 
     @staticmethod

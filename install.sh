@@ -27,10 +27,16 @@ echo "==> Instalando dependencias Python dentro de .venv..."
 "${PROJECT_DIR}/.venv/bin/pip" install --upgrade pip -q
 "${PROJECT_DIR}/.venv/bin/pip" install -e "${PROJECT_DIR}[dev]" -q
 
-# 3. Copiar el archivo de permisos ExApp (.pta) a ~/pt/extensions si existe o crear carpeta
-mkdir -p "${HOME}/pt/extensions"
-cp -f "${PROJECT_DIR}/pt-mcp-bridge.pta" "${HOME}/pt/extensions/pt-mcp-bridge.pta"
-echo "==> Archivo ExApp copiado en: ${HOME}/pt/extensions/pt-mcp-bridge.pta"
+# 3. Preparar permisos de la carpeta de extensiones de Packet Tracer
+# IMPORTANTE: No pre-copiamos pt-mcp-bridge.pta dentro de ~/pt/extensions ni /opt/pt/extensions
+# porque QFile::copy() de Packet Tracer falla con "Error Importing App Meta File" si el archivo
+# destino ya existe al pulsar "Add...". En su lugar, limpiamos duplicados previos y damos
+# permisos de escritura a /opt/pt/extensions para que Packet Tracer pueda importarlo sin error.
+rm -f "${HOME}/pt/extensions/pt-mcp-bridge.pta" 2>/dev/null || true
+if [ -d "/opt/pt/extensions" ]; then
+    sudo chmod -R a+rwX /opt/pt/extensions || true
+    sudo rm -f /opt/pt/extensions/pt-mcp-bridge.pta 2>/dev/null || true
+fi
 
 # 4. Crear acceso directo en el menú de aplicaciones del usuario
 APPS_DIR="${HOME}/.local/share/applications"

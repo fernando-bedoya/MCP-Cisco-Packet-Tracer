@@ -44,7 +44,6 @@ dev = ["pytest>=8", "ruff>=0.5", "pyinstaller>=6"]
 
 [project.scripts]
 el-arriero-mcp = "pt_mcp_bridge.cli:main"
-tracelink = "pt_mcp_bridge.cli:main"
 pt-mcp-bridge = "pt_mcp_bridge.cli:main"
 pt-quick = "pt_mcp_bridge.quick:main"
 

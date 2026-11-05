@@ -66,12 +66,11 @@ def pta_file_path() -> Path:
         Path.cwd() / PTA_FILENAME,
         Path(sys.executable).resolve().parent / PTA_FILENAME,
         Path(sys.executable).resolve().parent.parent / PTA_FILENAME,
-        Path("/opt/tracelink") / PTA_FILENAME,
-        Path("/usr/share/tracelink") / PTA_FILENAME,
+        Path("/opt/el-arriero-mcp") / PTA_FILENAME,
+        Path("/usr/share/el-arriero-mcp") / PTA_FILENAME,
         Path(__file__).resolve().parents[2] / PTA_FILENAME,
-        Path.home() / "pt" / "extensions" / PTA_FILENAME,
     ]
     for path in candidates:
         if path.is_file():
             return path
-    return Path("/opt/tracelink") / PTA_FILENAME if Path("/opt/tracelink").is_dir() else Path.cwd() / PTA_FILENAME
+    return Path("/opt/el-arriero-mcp") / PTA_FILENAME if Path("/opt/el-arriero-mcp").is_dir() else Path.cwd() / PTA_FILENAME

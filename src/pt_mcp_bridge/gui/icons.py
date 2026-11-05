@@ -74,6 +74,16 @@ INFO_SVG = """
 </svg>
 """
 
+BOOK_SVG = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path d="M4 5.5 A2.5 2.5 0 0 1 6.5 3 H19.5 V18.5 H6.5 A2.5 2.5 0 0 0 4 21 Z"
+        stroke="{color}" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M4 18.5 A2.5 2.5 0 0 1 6.5 16 H19.5 V21 H6.5 A2.5 2.5 0 0 1 4 18.5 Z"
+        stroke="{color}" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M8.5 7.5 H15.5 M8.5 11 H13.5" stroke="{color}" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
+"""
+
 # 4. Iconos de campos: Host (base de datos/servidor) y Puerto IPC (conector)
 HOST_SVG = """
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
