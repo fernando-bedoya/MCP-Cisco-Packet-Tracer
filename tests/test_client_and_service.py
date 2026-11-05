@@ -268,6 +268,43 @@ def test_solid_architecture_and_dependency_injection(fake_pt):
     assert macro_res == {"custom": True, "Lab": 42}
     assert "custom_lab" in svc.meta.macros.available()
 
+    # Verificar creación masiva rápida (30 PCs + 3 switches + 2 routers + DHCP + rutas) en 1 sola llamada
+    lab_res = json.loads(svc.generate_lab({
+        "devices": [
+            {"name": "R1", "kind": "router", "x": 250, "y": 100},
+            {"name": "R2", "kind": "router", "x": 500, "y": 100},
+            {"name": "SW1", "kind": "switch", "x": 150, "y": 240},
+            {"name": "SW2", "kind": "switch", "x": 350, "y": 240},
+            {"name": "SW3", "kind": "switch", "x": 550, "y": 240},
+        ],
+        "device_groups": [
+            {"prefix": "PC", "kind": "pc", "count": 30, "dhcp": True, "connect_to": ["SW1", "SW2", "SW3"]},
+        ],
+        "links": [
+            {"from": "R1", "to": "R2"},
+            {"from": "R1", "to": "SW1"},
+            {"from": "R1", "to": "SW2"},
+            {"from": "R2", "to": "SW3"},
+        ],
+        "dhcp_pools": [
+            {
+                "device": "R1",
+                "pool_name": "LAN_POOL",
+                "network": "192.168.1.0",
+                "mask": "255.255.255.0",
+                "default_router": "192.168.1.1",
+                "dns_server": "8.8.8.8",
+                "excluded_addresses": ["192.168.1.1"],
+            }
+        ],
+        "static_routes": [
+            {"device": "R1", "prefix": "0.0.0.0", "mask": "0.0.0.0", "next_hop": "10.0.0.2"},
+        ],
+    }))
+    assert lab_res["lab_generated"] is True
+    assert len(lab_res["topology"]["imported_devices"]) == 35
+    assert lab_res["topology"]["imported_links"] == 34
+
     c.disconnect()
 
 

@@ -18,11 +18,36 @@ def _safe(fn: Callable[[], str]) -> str:
         return f"ERROR: {exc}"
 
 
+MCP_INSTRUCTIONS = """
+REGLA DE VELOCIDAD OBLIGATORIA PARA EL AGENTE DE IA:
+1. Cuando el usuario pida crear o configurar una topología con 3 o más dispositivos (por ejemplo: 30 PCs, varios switches, routers, DHCP y enrutamiento), PROHIBIDO llamar a `cpt_add_device`, `cpt_connect_ports` o `cpt_configure_host` uno por uno. Hacer 50-100 llamadas individuales tarda minutos y pide demasiadas confirmaciones.
+2. SIEMPRE ejecuta toda la construcción y configuración en UNA SOLA LLAMADA usando `cpt_generate_lab` o `cpt_batch`:
+   - En `cpt_generate_lab(spec)` puedes declarar:
+     * `devices`: lista de routers/switches/servidores/cloud (`[{"name": "R1", "kind": "router", "x": 250, "y": 120}, ...]`).
+     * `device_groups`: creación masiva instantánea de hosts con auto-cableado y DHCP, ej.:
+       `[{"prefix": "PC", "kind": "pc", "count": 30, "dhcp": true, "connect_to": ["SW1", "SW2", "SW3"]}]`
+       (reparte y conecta automáticamente los 30 PCs a los puertos libres de SW1, SW2 y SW3 en 1 segundo).
+     * `links`: enlaces entre equipos; puedes usar `{"from": "R1", "to": "SW1"}` o `"port": "auto"` para elegir el siguiente puerto libre sin consultar `cpt_list_ports`.
+     * `ios_configs`: diccionario `{"R1": ["interface GigabitEthernet0/0", "ip address ...", "no shutdown", ...], "R2": [...]}` con todos los comandos IOS de cada router/switch en un solo lote.
+     * `dhcp_pools` y `static_routes`: configuración declarativa de servidores DHCP y rutas.
+     * `fast_forward`: `true` (por defecto) para que STP y DHCP converjan al instante.
+""".strip()
+
+
 def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
               port: int = config.DEFAULT_MCP_PORT):
     from mcp.server.fastmcp import FastMCP
+    from mcp.types import ToolAnnotations
 
-    mcp = FastMCP("pt-mcp-bridge", host=host, port=port)
+    mcp = FastMCP("el-arriero-mcp", instructions=MCP_INSTRUCTIONS, host=host, port=port)
+    safe_annotations = ToolAnnotations(destructiveHint=False, openWorldHint=False)
+    orig_tool = mcp.tool
+
+    def _non_destructive_tool(*args: Any, **kwargs: Any):
+        kwargs.setdefault("annotations", safe_annotations)
+        return orig_tool(*args, **kwargs)
+
+    mcp.tool = _non_destructive_tool  # type: ignore[method-assign]
 
     # =========================================================================
     # BASE & TOPOLOGÍA (14 herramientas originales + 12 de topología/dispositivos)
@@ -30,10 +55,10 @@ def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
     @mcp.tool()
     def cpt_add_device(name: str, device_type: str = "router", model: str = "",
                        x: int = 200, y: int = 200) -> str:
-        """Agrega un nodo al espacio de trabajo de Packet Tracer.
+        """Agrega un único nodo al espacio de trabajo de Packet Tracer.
+        IMPORTANTE: Si necesitas crear 3 o más equipos, NO llames a esta herramienta en bucle; usa `cpt_generate_lab` (con `devices` o `device_groups`) o `cpt_batch` en una sola llamada.
         - device_type: router | switch | multi_layer_switch | switch3650 | pc | laptop | server | hub | cloud | ap | wireless_router | printer | asa
-        - model: modelo exacto de PT (ej. '2911', '1941', '2960-24TT', '3560-24PS', 'PC-PT', 'Server-PT'); si se deja vacío usa el predeterminado del tipo.
-        Salta automáticamente el arranque IOS (`skipBoot`) y cierra el diálogo inicial."""
+        - model: modelo exacto de PT (ej. '2911', '1941', '2960-24TT', '3560-24PS', 'PC-PT', 'Server-PT'); si se deja vacío usa el predeterminado del tipo."""
         return _safe(lambda: service.add_device(name, device_type, model, x, y))
 
     @mcp.tool()
@@ -57,9 +82,10 @@ def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
         return _safe(lambda: service.clone_device(source_name, new_name, x, y))
 
     @mcp.tool()
-    def cpt_connect_ports(device_a: str, port_a: str, device_b: str, port_b: str,
+    def cpt_connect_ports(device_a: str, port_a: str = "auto", device_b: str = "", port_b: str = "auto",
                           cable: str = "auto") -> str:
-        """Conecta dos interfaces físicas mediante un cable.
+        """Conecta dos interfaces físicas mediante un cable (`port_a` y `port_b` pueden ser `'auto'` para elegir el siguiente puerto libre automáticamente).
+        IMPORTANTE: Para conectar múltiples enlaces a la vez, usa `cpt_generate_lab` o `cpt_batch` en una sola llamada.
         - cable: auto | straight | cross | crossover | serial | console | rollover | fiber | phone | coaxial | usb"""
         return _safe(lambda: service.connect_ports(device_a, port_a, device_b, port_b, cable))
 
@@ -526,7 +552,16 @@ def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
 
     @mcp.tool()
     def cpt_generate_lab(spec: dict[str, Any]) -> str:
-        """Construye un laboratorio completo a partir de una especificación declarativa (`devices`, `links`, `notes`, `ios_configs`)."""
+        """HERRAMIENTA PREFERIDA DE ALTA VELOCIDAD: Construye y configura una red completa en UNA SOLA LLAMADA (tarda segundos en vez de minutos y evita confirmaciones repetidas).
+        Campos soportados en `spec`:
+        - `devices`: `[{'name': 'R1', 'kind': 'router', 'x': 250, 'y': 120}, {'name': 'SW1', 'kind': 'switch', 'x': 200, 'y': 260}, ...]` (en hosts puedes incluir `'dhcp': True` o `'ip'`, `'mask'`, `'gateway'`, `'dns'`).
+        - `device_groups`: creación masiva de PCs/hosts con auto-cableado, ej:
+          `[{'prefix': 'PC', 'kind': 'pc', 'count': 30, 'dhcp': True, 'connect_to': ['SW1', 'SW2', 'SW3']}]`
+        - `links`: `[{'from': 'R1', 'from_port': 'GigabitEthernet0/0', 'to': 'SW1', 'to_port': 'GigabitEthernet0/1'}, ...]` (puedes usar `'auto'` en los puertos).
+        - `ios_configs`: `{'R1': ['interface GigabitEthernet0/0', 'ip address ...', 'no shutdown'], ...}`
+        - `dhcp_pools`: `[{'device': 'R1', 'pool_name': 'LAN1', 'network': '192.168.1.0', 'mask': '255.255.255.0', 'default_router': '192.168.1.1', 'dns_server': '8.8.8.8', 'excluded_addresses': ['192.168.1.1']}]`
+        - `static_routes`: `[{'device': 'R1', 'prefix': '0.0.0.0', 'mask': '0.0.0.0', 'next_hop': '10.0.0.2'}]`
+        - `fast_forward`: `True` (por defecto converge STP y DHCP al finalizar)."""
         return _safe(lambda: service.generate_lab(spec))
 
     @mcp.tool()
@@ -559,7 +594,7 @@ def build_mcp(service: PacketTracerService, host: str = config.DEFAULT_MCP_HOST,
 
     @mcp.tool()
     def cpt_batch(operations: list[dict[str, Any]], stop_on_error: bool = False) -> str:
-        """Ejecuta múltiples herramientas del servicio en una sola llamada (`[{'tool': 'cpt_...', 'args': {...}}]`)."""
+        """HERRAMIENTA DE EJECUCIÓN EN LOTE: Ejecuta decenas de operaciones (`[{'tool': 'cpt_...', 'args': {...}}]`) en UNA SOLA llamada MCP para máxima velocidad y sin confirmaciones individuales."""
         return _safe(lambda: service.batch(operations, stop_on_error))
 
     @mcp.tool()

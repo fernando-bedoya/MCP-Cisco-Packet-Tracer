@@ -11,9 +11,9 @@ from pt_mcp_bridge.ipc import ConnectionState
 S = ConnectionState
 
 APP_TITLE = "El Arriero MCP"
-APP_SUBTITLE = "MCP Bridge · Universidad de Caldas"
-HERO_DESCRIPTION = "Conecta tu MCP con Cisco Packet Tracer de forma rápida y sencilla."
-APP_VERSION = "v1.0.0"
+APP_SUBTITLE = "Puente MCP para Cisco Packet Tracer"
+HERO_DESCRIPTION = "Conecta tu cliente MCP con Cisco Packet Tracer de forma directa."
+APP_VERSION = "v1.1.0"
 
 # Paleta sobria sin saturación ni neón
 ACCENT_GREEN = "#70B77E"
@@ -149,6 +149,12 @@ QFrame#infoCard {
     background-color: rgba(21, 21, 21, 215);
     border: 1px solid #303030;
     border-radius: 8px;
+}
+
+QFrame#flowStepBox {
+    background-color: rgba(14, 14, 14, 230);
+    border: 1px solid #333333;
+    border-radius: 6px;
 }
 
 QPushButton#navBtn {

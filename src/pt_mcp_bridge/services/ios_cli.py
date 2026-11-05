@@ -100,22 +100,31 @@ class IosCliService(DomainServiceBase):
         if dhcp:
             self._run(f"dhcp port {device}:{port}", calls.host_set_dhcp(device, port, True))
             self._run(f"dhcp dev {device}", calls.host_set_device_dhcp(device, True))
-        else:
-            if not ip or not mask:
-                raise ValidationError("Para IP estática debes indicar `ip` y `mask` (o usar `dhcp=True`).")
-            self._run(f"dhcp off {device}:{port}", calls.host_set_dhcp(device, port, False))
-            self._run(f"ip {device}:{port} {ip}/{mask}", calls.host_set_ip_mask(device, port, ip.strip(), mask.strip()))
-            if gateway.strip():
-                self._run(f"gw {device}:{port} {gateway}", calls.host_set_gateway(device, port, gateway.strip()))
-            if dns.strip():
-                self._run(f"dns {device}:{port} {dns}", calls.host_set_dns(device, port, dns.strip()))
+            return json.dumps({
+                "device": device,
+                "port": port,
+                "dhcp": True,
+                "ip": None,
+                "mask": None,
+                "gateway": None,
+                "dns": None,
+            }, ensure_ascii=False)
+
+        if not ip or not mask:
+            raise ValidationError("Para IP estática debes indicar `ip` y `mask` (o usar `dhcp=True`).")
+        self._run(f"dhcp off {device}:{port}", calls.host_set_dhcp(device, port, False))
+        self._run(f"ip {device}:{port} {ip}/{mask}", calls.host_set_ip_mask(device, port, ip.strip(), mask.strip()))
+        if gateway.strip():
+            self._run(f"gw {device}:{port} {gateway}", calls.host_set_gateway(device, port, gateway.strip()))
+        if dns.strip():
+            self._run(f"dns {device}:{port} {dns}", calls.host_set_dns(device, port, dns.strip()))
 
         cur_ip = self._run(f"getIp {device}:{port}", calls.port_step(device, port) + [Step("getIpAddress")])
         cur_mask = self._run(f"getMask {device}:{port}", calls.port_step(device, port) + [Step("getSubnetMask")])
         return json.dumps({
             "device": device,
             "port": port,
-            "dhcp": dhcp,
+            "dhcp": False,
             "ip": cur_ip,
             "mask": cur_mask,
             "gateway": gateway or None,

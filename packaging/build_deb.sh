@@ -8,7 +8,7 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${PROJECT_DIR}"
 
 PKG_NAME="el-arriero-mcp"
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.1.0}"
 ARCH="amd64"
 DEB_ROOT="${PROJECT_DIR}/build/deb/${PKG_NAME}_${VERSION}_${ARCH}"
 OUT_DEB="${PROJECT_DIR}/dist/${PKG_NAME}_${VERSION}_${ARCH}.deb"

@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versión del paquete (ej. 1.0.0)"
+        description: "Versión del paquete (ej. 1.1.0)"
         required: false
-        default: "1.0.0"
+        default: "1.1.0"
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             VER="${GITHUB_REF#refs/tags/v}"
           else
-            VER="${{ github.event.inputs.version || '1.0.0' }}"
+            VER="${{ github.event.inputs.version || '1.1.0' }}"
           fi
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
 

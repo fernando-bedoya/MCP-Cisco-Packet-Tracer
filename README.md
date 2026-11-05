@@ -98,20 +98,20 @@ El servidor publica **99 herramientas** bajo el prefijo `cpt_*`, diseñadas para
 
 ### Opción A (Recomendada — Cero dependencias): Instalador autónomo `.deb`
 
-El paquete **[`el-arriero-mcp_1.0.0_amd64.deb`](el-arriero-mcp_1.0.0_amd64.deb)** (disponible tanto en la sección **Releases** de GitHub como en el proyecto) ya trae todo comprimido en un solo ejecutable autónomo (Python, PyQt6, QtSvg, FastMCP, el índice IPC, las 99 herramientas y el archivo `.pta`), configura automáticamente los permisos de `/opt/pt/extensions` y no entra en conflicto con repositorios externos de `apt`:
+El paquete **[`el-arriero-mcp_1.1.0_amd64.deb`](el-arriero-mcp_1.1.0_amd64.deb)** (disponible tanto en la sección **Releases** de GitHub como en el proyecto) ya trae todo comprimido en un solo ejecutable autónomo (Python, PyQt6, QtSvg, FastMCP, el índice IPC, las 99 herramientas y el archivo `.pta`), configura automáticamente los permisos de `/opt/pt/extensions` y no entra en conflicto con repositorios externos de `apt`:
 
-1. Haz **doble clic** sobre `el-arriero-mcp_1.0.0_amd64.deb` o instálalo directamente con `dpkg` / `apt`:
+1. Haz **doble clic** sobre `el-arriero-mcp_1.1.0_amd64.deb` o instálalo directamente con `dpkg` / `apt`:
    ```bash
-   sudo dpkg -i el-arriero-mcp_1.0.0_amd64.deb
+   sudo dpkg -i el-arriero-mcp_1.1.0_amd64.deb
    ```
 2. Abre **El Arriero MCP** desde tu menú de aplicaciones o ejecutando `el-arriero-mcp` en la terminal.
 
 #### Publicación de nuevas versiones en GitHub Releases
 Para publicar una nueva versión del instalador `.deb` en la pestaña **Releases** de GitHub de forma automatizada:
 ```bash
-./packaging/publish_release.sh 1.0.0
+./packaging/publish_release.sh 1.1.0
 ```
-También se incluye el workflow de integración continua [`.github/workflows/release.yml`](.github/workflows/release.yml), que ejecuta `ruff` + `pytest`, compila el `.deb` y publica el Release automáticamente al subir cualquier tag `v*` (ej. `git tag v1.0.0 && git push origin v1.0.0`).
+También se incluye el workflow de integración continua [`.github/workflows/release.yml`](.github/workflows/release.yml), que ejecuta `ruff` + `pytest`, compila el `.deb` y publica el Release automáticamente al subir cualquier tag `v*` (ej. `git tag v1.1.0 && git push origin v1.1.0`).
 
 ### Opción B: Desde código fuente
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pt-mcp-bridge"
-version = "1.0.0"
+version = "1.1.0"
 description = "Universal AI Bridge (MCP Server + PyQt6 GUI + Native PTMP IPC) for Cisco Packet Tracer on Linux"
 readme = "README.md"
 license = "MIT"

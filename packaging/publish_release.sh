@@ -6,7 +6,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${PROJECT_DIR}"
 
-VERSION="${1:-1.0.0}"
+VERSION="${1:-1.1.0}"
 VERSION="${VERSION#v}"
 TAG="v${VERSION}"
 DEB_FILE="${PROJECT_DIR}/dist/el-arriero-mcp_${VERSION}_amd64.deb"

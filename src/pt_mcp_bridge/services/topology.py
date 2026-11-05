@@ -8,7 +8,7 @@ from pt_mcp_bridge import calls
 from pt_mcp_bridge.ipc import PTError
 from pt_mcp_bridge.ipc.contracts import IPCTransport
 from pt_mcp_bridge.ipc.protocol import Arg, Step
-from pt_mcp_bridge.services.base import DomainServiceBase, ValidationError
+from pt_mcp_bridge.services.base import IOS_CAPABLE_KINDS, DomainServiceBase, ValidationError
 from pt_mcp_bridge.services.ios_cli import IosCliService
 
 MODULE_TYPE_CODES: dict[str, int] = {
@@ -26,6 +26,29 @@ MODULE_TYPE_CODES: dict[str, int] = {
     "SFP_MODULE": 30,
 }
 
+DEFAULT_PORT_CANDIDATES: dict[str, list[str]] = {
+    "pc": ["FastEthernet0"],
+    "laptop": ["FastEthernet0"],
+    "server": ["FastEthernet0"],
+    "printer": ["FastEthernet0"],
+    "ip_phone": ["FastEthernet0"],
+    "router": [
+        "GigabitEthernet0/0",
+        "GigabitEthernet0/1",
+        "GigabitEthernet0/2",
+        "GigabitEthernet0/0/0",
+        "GigabitEthernet0/0/1",
+        "FastEthernet0/0",
+        "FastEthernet0/1",
+    ],
+    "switch": [f"FastEthernet0/{i}" for i in range(1, 25)] + ["GigabitEthernet0/1", "GigabitEthernet0/2"],
+    "multi_layer_switch": [f"FastEthernet0/{i}" for i in range(1, 25)] + ["GigabitEthernet0/1", "GigabitEthernet0/2"],
+    "switch3650": [f"GigabitEthernet1/0/{i}" for i in range(1, 25)],
+    "cloud": ["Ethernet6", "Modem4", "Modem5"],
+    "central_office_server": ["Backbone"] + [f"Coaxial{i}" for i in range(6)],
+    "cell_tower": ["Coaxial0"],
+}
+
 
 class TopologyService(DomainServiceBase):
     """Gestiona nodos, enlaces, coordenadas, módulos de hardware, energía y notas en el lienzo."""
@@ -33,6 +56,26 @@ class TopologyService(DomainServiceBase):
     def __init__(self, client: IPCTransport, cli_service: IosCliService) -> None:
         super().__init__(client)
         self._cli = cli_service
+
+    def _resolve_device_kind(self, dev_name: str, fallback: str = "router") -> str:
+        cached = self._device_kinds.get(dev_name)
+        if cached:
+            return cached
+        try:
+            tcode = int(self._run(f"type {dev_name}", calls.device_attr_by_name(dev_name, "getType")) or 0)
+            kind = calls.DEVICE_KIND_BY_CODE.get(tcode, fallback)
+            self._device_kinds[dev_name] = kind
+            return kind
+        except PTError:
+            return fallback
+
+    def _next_free_port(self, dev_name: str, kind: str) -> str:
+        used = self._used_ports.setdefault(dev_name, set())
+        candidates = DEFAULT_PORT_CANDIDATES.get(kind, ["FastEthernet0", "GigabitEthernet0/0"])
+        for candidate in candidates:
+            if candidate not in used:
+                return candidate
+        return candidates[-1]
 
     def add_device(self, name: str, device_type: str, model: str, x: int, y: int) -> str:
         name = name.strip()
@@ -50,13 +93,19 @@ class TopologyService(DomainServiceBase):
         if not created_name:
             raise PTError(f"Packet Tracer rechazó crear el modelo '{model}' (tipo {dtype}).")
 
-        self._ready_console(created_name)
+        self._device_kinds[created_name] = dtype
+        if dtype in IOS_CAPABLE_KINDS:
+            self._ready_console(created_name)
 
         final_name = created_name
         if name and created_name != name:
             self._run(f"rename {created_name} -> {name}", calls.rename_device(created_name, name))
             final_name = name
+            self._device_kinds[final_name] = dtype
+            if created_name in self._console_ready:
+                self._console_ready.add(final_name)
 
+        self._used_ports.setdefault(final_name, set())
         return json.dumps({
             "name": final_name,
             "created_as": created_name,
@@ -71,24 +120,31 @@ class TopologyService(DomainServiceBase):
         ok = self._run(f"remove_device {name}", calls.remove_device(name))
         if not ok:
             raise PTError(f"No se pudo eliminar el dispositivo '{name}'.")
+        self._device_kinds.pop(name, None)
+        self._console_ready.discard(name)
+        self._used_ports.pop(name, None)
         return json.dumps({"removed": name}, ensure_ascii=False)
 
-    def connect_ports(self, dev_a: str, port_a: str, dev_b: str, port_b: str, cable: str) -> str:
+    def connect_ports(self, dev_a: str, port_a: str = "auto", dev_b: str = "",
+                      port_b: str = "auto", cable: str = "auto") -> str:
         dev_a, port_a = dev_a.strip(), port_a.strip()
         dev_b, port_b = dev_b.strip(), port_b.strip()
         cable_key = cable.lower().strip() or "auto"
         if cable_key not in calls.CABLE_CODES:
             raise ValidationError(f"cable inválido '{cable}'. Opciones: {', '.join(calls.CABLE_CODES)}")
 
+        auto_a = not port_a or port_a.lower() == "auto"
+        auto_b = not port_b or port_b.lower() == "auto"
+
         kind_a, kind_b = "router", "switch"
-        if cable_key == "auto":
-            try:
-                ta = int(self._run(f"type {dev_a}", calls.device_attr_by_name(dev_a, "getType")) or 0)
-                tb = int(self._run(f"type {dev_b}", calls.device_attr_by_name(dev_b, "getType")) or 0)
-                kind_a = calls.DEVICE_KIND_BY_CODE.get(ta, "router")
-                kind_b = calls.DEVICE_KIND_BY_CODE.get(tb, "switch")
-            except PTError:
-                pass
+        if cable_key == "auto" or auto_a or auto_b:
+            kind_a = self._resolve_device_kind(dev_a, "router")
+            kind_b = self._resolve_device_kind(dev_b, "switch")
+
+        if auto_a:
+            port_a = self._next_free_port(dev_a, kind_a)
+        if auto_b:
+            port_b = self._next_free_port(dev_b, kind_b)
 
         code = calls.resolve_cable_code(cable_key, kind_a, port_a, kind_b, port_b)
         resolved_name = calls.CABLE_NAME_BY_CODE.get(code, cable_key)
@@ -101,6 +157,8 @@ class TopologyService(DomainServiceBase):
                 f"createLink devolvió false entre {dev_a}:{port_a} y {dev_b}:{port_b} "
                 f"con cable {resolved_name} ({code}). Verifica los nombres exactos de los puertos con cpt_list_ports."
             )
+        self._used_ports.setdefault(dev_a, set()).add(port_a)
+        self._used_ports.setdefault(dev_b, set()).add(port_b)
         return json.dumps({
             "a": {"device": dev_a, "port": port_a},
             "b": {"device": dev_b, "port": port_b},
@@ -117,11 +175,14 @@ class TopologyService(DomainServiceBase):
             tcode = int(self._run("type", calls.device_attr(i, "getType")) or 0)
             x = self._run("x", calls.device_attr(i, "getCenterXCoordinate"))
             y = self._run("y", calls.device_attr(i, "getCenterYCoordinate"))
+            kind = calls.DEVICE_KIND_BY_CODE.get(tcode, f"type_{tcode}")
+            if isinstance(name, str) and name:
+                self._device_kinds[name] = kind
             devices.append({
                 "name": name,
                 "model": model,
                 "type": tcode,
-                "kind": calls.DEVICE_KIND_BY_CODE.get(tcode, f"type_{tcode}"),
+                "kind": kind,
                 "x": x,
                 "y": y,
             })
@@ -155,6 +216,11 @@ class TopologyService(DomainServiceBase):
     def rename_device(self, old_name: str, new_name: str, sync_hostname: bool = True) -> str:
         old_name, new_name = old_name.strip(), new_name.strip()
         self._run(f"rename {old_name} -> {new_name}", calls.rename_device(old_name, new_name))
+        if old_name in self._device_kinds:
+            self._device_kinds[new_name] = self._device_kinds.pop(old_name)
+        if old_name in self._console_ready:
+            self._console_ready.discard(old_name)
+            self._console_ready.add(new_name)
         if sync_hostname:
             try:
                 tcode = int(self._run(f"type {new_name}", calls.device_attr_by_name(new_name, "getType")) or 0)
@@ -206,6 +272,8 @@ class TopologyService(DomainServiceBase):
     def disconnect_ports(self, device: str, port: str) -> str:
         device, port = device.strip(), port.strip()
         ok = self._run(f"deleteLink {device}:{port}", calls.delete_link(device, port))
+        if device in self._used_ports:
+            self._used_ports[device].discard(port)
         return json.dumps({"device": device, "port": port, "disconnected": bool(ok)}, ensure_ascii=False)
 
     def set_port_state(self, device: str, port: str, enabled: bool = True) -> str:
@@ -229,7 +297,7 @@ class TopologyService(DomainServiceBase):
             )
         finally:
             self._run(f"powerOn {device}", calls.set_device_power(device, True))
-            self._ready_console(device)
+            self._ready_console(device, force=True)
         return json.dumps({
             "device": device,
             "slot": slot,
@@ -242,7 +310,7 @@ class TopologyService(DomainServiceBase):
         device = device.strip()
         self._run(f"setPower {device}={power_on}", calls.set_device_power(device, power_on))
         if power_on:
-            self._ready_console(device)
+            self._ready_console(device, force=True)
         cur = self._run(f"getPower {device}", calls.get_device_power(device))
         return json.dumps({"device": device, "power_on": bool(cur)}, ensure_ascii=False)
 
@@ -323,32 +391,110 @@ class TopologyService(DomainServiceBase):
                     pass
 
         created_devices = []
-        for d in data.get("devices", []):
-            kind = d.get("kind", "router")
+        created_links = []
+
+        # 1. Crear dispositivos individuales declarados en `devices`
+        for idx, d in enumerate(data.get("devices", [])):
+            kind = str(d.get("kind") or d.get("device_type") or "router").lower().strip()
             if kind not in calls.DEVICE_TYPES:
                 kind = "router"
+            default_x = 160 + (idx % 6) * 150
+            default_y = 140 + (idx // 6) * 140
             self.add_device(
                 d["name"],
                 kind,
                 d.get("model", ""),
-                int(float(d.get("x", 200))),
-                int(float(d.get("y", 200))),
+                int(float(d.get("x", default_x))),
+                int(float(d.get("y", default_y))),
             )
             created_devices.append(d["name"])
+
+            # Configuración directa de host (DHCP o IP estática) si se incluye en el nodo
+            if d.get("dhcp") is True:
+                try:
+                    self._cli.configure_host(d["name"], dhcp=True, port=d.get("port", "FastEthernet0"))
+                except PTError:
+                    pass
+            elif d.get("ip") and d.get("mask"):
+                try:
+                    self._cli.configure_host(
+                        d["name"],
+                        ip=d["ip"],
+                        mask=d["mask"],
+                        gateway=d.get("gateway", ""),
+                        dns=d.get("dns", ""),
+                        port=d.get("port", "FastEthernet0"),
+                    )
+                except PTError:
+                    pass
+
             for p in d.get("ports", []):
-                if p.get("ip") and p.get("mask"):
+                if p.get("dhcp") is True:
                     try:
-                        self._cli.configure_host(d["name"], ip=p["ip"], mask=p["mask"], port=p.get("name", "FastEthernet0"))
+                        self._cli.configure_host(d["name"], dhcp=True, port=p.get("name", "FastEthernet0"))
+                    except PTError:
+                        pass
+                elif p.get("ip") and p.get("mask"):
+                    try:
+                        self._cli.configure_host(
+                            d["name"],
+                            ip=p["ip"],
+                            mask=p["mask"],
+                            gateway=p.get("gateway", ""),
+                            dns=p.get("dns", ""),
+                            port=p.get("name", "FastEthernet0"),
+                        )
                     except PTError:
                         pass
 
-        created_links = []
+        # 2. Crear lotes masivos de dispositivos (`device_groups`) en una sola operación
+        for grp in data.get("device_groups", []):
+            prefix = str(grp.get("prefix", "PC")).strip()
+            kind = str(grp.get("kind") or grp.get("device_type") or "pc").lower().strip()
+            if kind not in calls.DEVICE_TYPES:
+                kind = "pc"
+            count = max(1, int(grp.get("count", 1)))
+            start_idx = int(grp.get("start_index", 1))
+            cols = max(1, int(grp.get("columns", 10)))
+            gx = int(grp.get("start_x", 120))
+            gy = int(grp.get("start_y", 420))
+            sx = int(grp.get("spacing_x", 110))
+            sy = int(grp.get("spacing_y", 110))
+            use_dhcp = bool(grp.get("dhcp", False))
+            targets = grp.get("connect_to", [])
+            if isinstance(targets, str) and targets.strip():
+                targets = [targets.strip()]
+
+            for i in range(count):
+                dev_name = f"{prefix}{start_idx + i}"
+                row, col = divmod(i, cols)
+                self.add_device(dev_name, kind, grp.get("model", ""), gx + col * sx, gy + row * sy)
+                created_devices.append(dev_name)
+                if use_dhcp:
+                    try:
+                        self._cli.configure_host(dev_name, dhcp=True, port=grp.get("port", "FastEthernet0"))
+                    except PTError:
+                        pass
+                if targets:
+                    sw_target = targets[(i * len(targets)) // count] if len(targets) > 1 else targets[0]
+                    self.connect_ports(dev_name, "auto", sw_target, "auto", grp.get("cable", "auto"))
+                    created_links.append({"a": {"device": dev_name, "port": "auto"}, "b": {"device": sw_target, "port": "auto"}})
+
+        # 3. Conectar enlaces explícitos en `links` (soporta puertos explícitos o `"auto"`)
         for lnk in data.get("links", []):
-            a, b = lnk.get("a", {}), lnk.get("b", {})
+            if "from" in lnk and "to" in lnk:
+                dev_a, port_a = lnk["from"], lnk.get("from_port", "auto")
+                dev_b, port_b = lnk["to"], lnk.get("to_port", "auto")
+            else:
+                a, b = lnk.get("a", {}), lnk.get("b", {})
+                dev_a = a.get("device", "")
+                port_a = a.get("port", "auto")
+                dev_b = b.get("device", "")
+                port_b = b.get("port", "auto")
             cable = lnk.get("cable", "auto")
             if cable not in calls.CABLE_CODES:
                 cable = "auto"
-            self.connect_ports(a["device"], a["port"], b["device"], b["port"], cable)
+            self.connect_ports(dev_a, port_a, dev_b, port_b, cable)
             created_links.append(lnk)
 
         return json.dumps({

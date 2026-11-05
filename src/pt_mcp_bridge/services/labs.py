@@ -81,10 +81,50 @@ class AcademicLabService(DomainServiceBase):
         res_import = json.loads(self._topology.import_topology_json(spec, clear_existing=bool(spec.get("clear_existing", False))))
         for note in spec.get("notes", []):
             self._topology.add_note(note.get("text", ""), int(note.get("x", 100)), int(note.get("y", 60)))
-        for dev_name, cmds in spec.get("ios_configs", {}).items():
+
+        # Bloques de comandos IOS por dispositivo + pools DHCP y rutas declarativas opcionales
+        ios_batches: dict[str, list[str]] = {
+            dev_name: list(cmds) for dev_name, cmds in spec.get("ios_configs", {}).items() if cmds
+        }
+        for pool in spec.get("dhcp_pools", []):
+            dev = pool.get("device", "")
+            if not dev:
+                continue
+            cmds = ios_batches.setdefault(dev, [])
+            for exc in pool.get("excluded_addresses", []):
+                cmds.append(f"ip dhcp excluded-address {exc}")
+            cmds.append(f"ip dhcp pool {pool.get('pool_name', 'LAN_POOL')}")
+            cmds.append(f"network {pool['network']} {pool['mask']}")
+            if pool.get("default_router"):
+                cmds.append(f"default-router {pool['default_router']}")
+            if pool.get("dns_server"):
+                cmds.append(f"dns-server {pool['dns_server']}")
+            cmds.append("exit")
+
+        for rt in spec.get("static_routes", []):
+            dev = rt.get("device", "")
+            if not dev:
+                continue
+            ios_batches.setdefault(dev, []).append(
+                f"ip route {rt['prefix']} {rt['mask']} {rt['next_hop']}"
+            )
+
+        for dev_name, cmds in ios_batches.items():
             if cmds:
                 self._cli.configure_ios(dev_name, cmds, save=True)
-        return json.dumps({"lab_generated": True, "topology": res_import}, ensure_ascii=False)
+
+        if spec.get("auto_layout"):
+            self._topology.layout_auto()
+
+        if spec.get("fast_forward", True):
+            self._cli.fast_forward()
+            self._cli.fast_forward()
+
+        return json.dumps({
+            "lab_generated": True,
+            "topology": res_import,
+            "configured_ios_devices": list(ios_batches.keys()),
+        }, ensure_ascii=False)
 
     def backup_all_configs(self, output_dir: str = "backups") -> str:
         out_path = Path(output_dir)
